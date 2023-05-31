@@ -5,15 +5,6 @@ import {
   protectedProcedure,
 } from "~/server/api/trpc";
 
-type UserData = {
-  id: string;
-  email: string;
-  name: string;
-  image: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 export const exampleRouter = createTRPCRouter({
   hello: publicProcedure
     .input(z.object({ text: z.string() }))
@@ -39,7 +30,7 @@ export const exampleRouter = createTRPCRouter({
         where: {
           email: ctx.session.user.email,
         },
-      }) as UserData;
+      });
     }
   }),
 });

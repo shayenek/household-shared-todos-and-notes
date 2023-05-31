@@ -65,6 +65,7 @@ const AuthShowcase: React.FC = () => {
     { enabled: sessionData?.user !== undefined },
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: userData } = api.example.getUserData.useQuery(
     undefined, // no input
     { enabled: sessionData?.user !== undefined },
@@ -74,10 +75,6 @@ const AuthShowcase: React.FC = () => {
     undefined, // no input
     { enabled: sessionData?.user !== undefined },
   );
-  
-
-  console.log(sessionData);
-
 
   return (
     <div className="flex flex-col items-center justify-center gap-4">

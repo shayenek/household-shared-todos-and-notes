@@ -65,11 +65,31 @@ const AuthShowcase: React.FC = () => {
     { enabled: sessionData?.user !== undefined },
   );
 
+  const { data: userData } = api.example.getUserData.useQuery(
+    undefined, // no input
+    { enabled: sessionData?.user !== undefined },
+  );
+
+  const { data: tasksDataForUser } = api.tasks.getTasksForUser.useQuery(
+    undefined, // no input
+    { enabled: sessionData?.user !== undefined },
+  );
+  
+
+  console.log(sessionData);
+
+
   return (
     <div className="flex flex-col items-center justify-center gap-4">
       <p className="text-center text-2xl text-white">
         {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
         {secretMessage && <span> - {secretMessage}</span>}
+        {tasksDataForUser?.map((task) => (
+          <div key={task.id}>
+            <span>{task.title} - </span>
+            <span>{task.description}</span>
+          </div>
+        ))}
       </p>
       <button
         className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"

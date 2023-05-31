@@ -5,6 +5,15 @@ import {
   protectedProcedure,
 } from "~/server/api/trpc";
 
+type UserData = {
+  id: string;
+  email: string;
+  name: string;
+  image: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export const exampleRouter = createTRPCRouter({
   hello: publicProcedure
     .input(z.object({ text: z.string() }))
@@ -14,7 +23,23 @@ export const exampleRouter = createTRPCRouter({
       };
     }),
 
+  getAll: publicProcedure.query(({ ctx }) => {
+    return ctx.prisma.example.findMany();
+  }),
+
   getSecretMessage: protectedProcedure.query(() => {
     return "you can now see this secret message!";
+  }),
+
+  getUserData: protectedProcedure.query(({ ctx }) => {
+    if(!ctx.session?.user?.email) {
+      throw new Error("No user found");
+    } else {
+      return ctx.prisma.user.findUnique({
+        where: {
+          email: ctx.session.user.email,
+        },
+      }) as UserData;
+    }
   }),
 });

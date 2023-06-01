@@ -1,66 +1,64 @@
-import type { Channel, PresenceChannel } from "pusher-js";
-import Pusher from "pusher-js";
-import { useEffect, useRef, useState, useContext, createContext } from "react";
-import { useStore, createStore } from "zustand";
+import type { Channel, PresenceChannel } from 'pusher-js';
+import Pusher from 'pusher-js';
+import { useEffect, useRef, useState, useContext, createContext } from 'react';
+import { useStore, createStore } from 'zustand';
 
-import { env } from "~/env.mjs";
+import { env } from '~/env.mjs';
 
 interface PusherProps {
-  slug: string;
+	slug: string;
 }
 
 interface PusherState {
-  pusherClient: Pusher;
-  channel: Channel;
-  presenceChannel: PresenceChannel;
-  members: Map<string, unknown>;
+	pusherClient: Pusher;
+	channel: Channel;
+	presenceChannel: PresenceChannel;
+	members: Map<string, unknown>;
 }
 
 const createPusherStore = ({ slug }: PusherProps) => {
-  let pusherClient: Pusher;
-  if (Pusher.instances.length) {
-    pusherClient = Pusher.instances[0] as Pusher;
-    pusherClient.connect();
-  } else {
-    const randomUserId = `random-user-id:${Math.random().toFixed(7)}`;
-    pusherClient = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: env.NEXT_PUBLIC_PUSHER_CLUSTER,
-      authEndpoint: "/api/pusher/auth-channel",
-      auth: {
-        headers: { user_id: randomUserId },
-      },
-    });
-  }
+	let pusherClient: Pusher;
+	if (Pusher.instances.length) {
+		pusherClient = Pusher.instances[0] as Pusher;
+		pusherClient.connect();
+	} else {
+		const randomUserId = `random-user-id:${Math.random().toFixed(7)}`;
+		pusherClient = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
+			cluster: env.NEXT_PUBLIC_PUSHER_CLUSTER,
+			authEndpoint: '/api/pusher/auth-channel',
+			auth: {
+				headers: { user_id: randomUserId },
+			},
+		});
+	}
 
-  const channel = pusherClient.subscribe(slug);
+	const channel = pusherClient.subscribe(slug);
 
-  const presenceChannel = pusherClient.subscribe(
-    `presence-${slug}`
-  ) as PresenceChannel
+	const presenceChannel = pusherClient.subscribe(`presence-${slug}`) as PresenceChannel;
 
-  const store = createStore<PusherState>(() => {
-    return {
-      pusherClient,
-      channel,
-      presenceChannel,
-      members: new Map(),
-    };
-  });
+	const store = createStore<PusherState>(() => {
+		return {
+			pusherClient,
+			channel,
+			presenceChannel,
+			members: new Map(),
+		};
+	});
 
-  // Update helper that sets 'members' to contents of presence channel's current members
-  const updateMembers = () => {
-    store.setState(() => ({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      members: new Map(Object.entries(presenceChannel.members.members)),
-    }));
-  };
+	// Update helper that sets 'members' to contents of presence channel's current members
+	const updateMembers = () => {
+		store.setState(() => ({
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+			members: new Map(Object.entries(presenceChannel.members.members)),
+		}));
+	};
 
-  // Bind all "present users changed" events to trigger updateMembers
-  presenceChannel.bind("pusher:subscription_succeeded", updateMembers);
-  presenceChannel.bind("pusher:member_added", updateMembers);
-  presenceChannel.bind("pusher:member_removed", updateMembers);
+	// Bind all "present users changed" events to trigger updateMembers
+	presenceChannel.bind('pusher:subscription_succeeded', updateMembers);
+	presenceChannel.bind('pusher:member_added', updateMembers);
+	presenceChannel.bind('pusher:member_removed', updateMembers);
 
-  return store;
+	return store;
 };
 
 /**
@@ -77,26 +75,22 @@ export const PusherContext = createContext<PusherStore | null>(null);
 type PusherProviderProps = React.PropsWithChildren<PusherProps>;
 
 export const PusherProvider = ({ slug, children }: PusherProviderProps) => {
-  const [store, setStore] = useState<PusherStore>();
+	const [store, setStore] = useState<PusherStore>();
 
-  useEffect(() => {
-    const newStore = createPusherStore({ slug });
-    setStore(newStore);
-    return () => {
-      const pusher = newStore.getState().pusherClient;
-      console.log("disconnecting pusher:", pusher);
-      console.log(
-        "(Expect a warning in terminal after this, React Dev Mode and all)"
-      );
-      pusher.disconnect();
-    };
-  }, [slug]);
+	useEffect(() => {
+		const newStore = createPusherStore({ slug });
+		setStore(newStore);
+		return () => {
+			const pusher = newStore.getState().pusherClient;
+			console.log('disconnecting pusher:', pusher);
+			console.log('(Expect a warning in terminal after this, React Dev Mode and all)');
+			pusher.disconnect();
+		};
+	}, [slug]);
 
-  if (!store) return null;
+	if (!store) return null;
 
-  return (
-    <PusherContext.Provider value={store}>{children}</PusherContext.Provider>
-  );
+	return <PusherContext.Provider value={store}>{children}</PusherContext.Provider>;
 };
 
 /**
@@ -107,40 +101,39 @@ export const PusherProvider = ({ slug, children }: PusherProviderProps) => {
  * (I really want useEvent tbh)
  */
 function usePusherStore<T>(
-  selector: (state: PusherState) => T,
-  equalityFn?: (left: T, right: T) => boolean
+	selector: (state: PusherState) => T,
+	equalityFn?: (left: T, right: T) => boolean
 ): T {
-  const store = useContext(PusherContext);
-  if (!store) throw new Error("Missing PusherContext.Provider in the tree");
-  return useStore(store, selector, equalityFn);
+	const store = useContext(PusherContext);
+	if (!store) throw new Error('Missing PusherContext.Provider in the tree');
+	return useStore(store, selector, equalityFn);
 }
 
 export function useSubscribeToEvent<MessageType>(
-  eventName: string,
-  callback: (data: MessageType) => void
+	eventName: string,
+	callback: (data: MessageType) => void
 ) {
-  const channel = usePusherStore((state) => state.channel);
+	const channel = usePusherStore((state) => state.channel);
 
-  const stableCallback = useRef(callback);
+	const stableCallback = useRef(callback);
 
-  // Keep callback sync'd
-  useEffect(() => {
-    stableCallback.current = callback;
-  }, [callback]);
+	// Keep callback sync'd
+	useEffect(() => {
+		stableCallback.current = callback;
+	}, [callback]);
 
-  useEffect(() => {
-    const reference = (data: MessageType) => {
-      stableCallback.current(data);
-    };
-    channel.bind(eventName, reference);
+	useEffect(() => {
+		const reference = (data: MessageType) => {
+			stableCallback.current(data);
+		};
+		channel.bind(eventName, reference);
 
-    console.log(channel);
+		console.log(channel);
 
-    return () => {
-      channel.unbind(eventName, reference);
-    };
-  }, [channel, eventName]);
+		return () => {
+			channel.unbind(eventName, reference);
+		};
+	}, [channel, eventName]);
 }
 
-export const useCurrentMemberCount = () =>
-  usePusherStore((s) => s.members.size);
+export const useCurrentMemberCount = () => usePusherStore((s) => s.members.size);

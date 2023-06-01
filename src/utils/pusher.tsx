@@ -36,7 +36,7 @@ const createPusherStore = ({ slug }: PusherProps) => {
 
   const presenceChannel = pusherClient.subscribe(
     `presence-${slug}`
-  ) as PresenceChannel;
+  ) as PresenceChannel
 
   const store = createStore<PusherState>(() => {
     return {
@@ -133,6 +133,9 @@ export function useSubscribeToEvent<MessageType>(
       stableCallback.current(data);
     };
     channel.bind(eventName, reference);
+
+    console.log(channel);
+
     return () => {
       channel.unbind(eventName, reference);
     };

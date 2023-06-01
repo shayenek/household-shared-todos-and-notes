@@ -19,7 +19,7 @@ export const tasksRouter = createTRPCRouter({
             const { title, description } = input;
 
             await pusherServerClient.trigger(
-                'presence-channel-tasks-and-notes',
+                `user-shayenek`,
                 'new-task',
                 {}
             )

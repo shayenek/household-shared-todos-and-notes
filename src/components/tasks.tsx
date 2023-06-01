@@ -52,7 +52,7 @@ export default function QuestionsViewWrapper() {
     if (!sessionData || !sessionData.user?.id) return null
 
     return (
-        <PusherProvider slug="channel-tasks-and-notes">
+        <PusherProvider slug={`user-shayenek`}>
             <Tasks />
         </PusherProvider>
     )

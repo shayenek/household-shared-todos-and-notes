@@ -30,18 +30,6 @@ const createPusherStore = ({ slug }: PusherProps) => {
         headers: { user_id: randomUserId },
       },
     });
-    // pusherClient = new Pusher(pusher_key, {
-    //   wsHost: pusher_server_host,
-    //   wsPort: pusher_server_port,
-    //   enabledTransports: pusher_server_tls ? ['ws', 'wss'] : ['ws'],
-    //   forceTLS: pusher_server_tls,
-    //   cluster: pusher_server_cluster,
-    //   disableStats: true,
-    //   authEndpoint: '/api/pusher/auth-channel',
-    //   auth: {
-    //     headers: { user_id: randomUserId },
-    //   },
-    // })
   }
 
   const channel = pusherClient.subscribe(slug);

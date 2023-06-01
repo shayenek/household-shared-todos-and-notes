@@ -1,4 +1,4 @@
-import { TextInput, Checkbox, Button, Group, Box, Textarea } from '@mantine/core';
+import { TextInput, Button, Group, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useSession } from "next-auth/react";
 import { useState } from 'react';

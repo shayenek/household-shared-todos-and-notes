@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { type AppType } from 'next/app';
 import { type Session } from 'next-auth';
@@ -14,10 +15,12 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
 	return (
 		<MantineProvider withGlobalStyles withNormalizeCSS>
-			<SessionProvider session={session}>
-				<Component {...pageProps} />
-				<Notifications />
-			</SessionProvider>
+			<ModalsProvider>
+				<SessionProvider session={session}>
+					<Component {...pageProps} />
+					<Notifications />
+				</SessionProvider>
+			</ModalsProvider>
 		</MantineProvider>
 	);
 };

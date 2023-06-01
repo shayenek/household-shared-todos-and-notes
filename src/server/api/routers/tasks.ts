@@ -10,22 +10,51 @@ export const tasksRouter = createTRPCRouter({
 				title: z.string(),
 				description: z.string(),
 				authorId: z.string().optional(),
+				type: z.string(),
+				startDate: z.date().optional(),
+				startTime: z.string().optional(),
+				endDate: z.date().optional(),
+				endTime: z.string().optional(),
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { title, description } = input;
+			const { title, description, type, startDate, startTime, endDate, endTime } = input;
 
 			const taskItem = await ctx.prisma.task.create({
 				data: {
 					title,
 					description,
 					author: { connect: { id: ctx.session.user.id } },
+					type,
+					startDate,
+					startTime,
+					endDate,
+					endTime,
 				},
 			});
 
 			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {});
 
 			return taskItem;
+		}),
+	updateTaskStatus: protectedProcedure
+		.input(
+			z.object({
+				id: z.string(),
+				completed: z.boolean(),
+			})
+		)
+		.mutation(({ input, ctx }) => {
+			const { id, completed } = input;
+
+			return ctx.prisma.task.update({
+				where: {
+					id,
+				},
+				data: {
+					completed,
+				},
+			});
 		}),
 	deleteTask: protectedProcedure
 		.input(

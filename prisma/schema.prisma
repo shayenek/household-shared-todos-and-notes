@@ -57,6 +57,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
+  type          String? @default("user")
 }
 
 model VerificationToken {
@@ -77,4 +78,8 @@ model Task {
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
   type        String   @default("note")
+  startDate   DateTime? @default(now())
+  startTime   String? @default("00:00")
+  endDate     DateTime?
+  endTime     String? @default("00:00")
 }

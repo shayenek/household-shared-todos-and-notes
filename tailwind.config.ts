@@ -7,7 +7,11 @@ export default {
 			sans: ['Poppins', 'sans-serif'],
 			serif: ['Merriweather', 'serif'],
 		},
-		extend: {},
+		extend: {
+			boxShadow: {
+				main: '0 0 12px 0 rgba(0, 0, 0, 0.13)',
+			},
+		},
 	},
 	plugins: [],
 } satisfies Config;

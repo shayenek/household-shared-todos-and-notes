@@ -1,27 +1,50 @@
+import { modals } from '@mantine/modals';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 
+import TaskElement from '~/components/taskitem';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 
 const Tasks: React.FC = () => {
 	const { data: sessionData } = useSession();
 	const [taskAuthor, setTaskAuthor] = useState<'all' | 'mine'>('all');
+	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 
 	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
 	});
 
-	useSubscribeToEvent('new-task', () => {
-		console.log('new task event received');
-		void refetch();
+	const updateTaskStatus = api.tasks.updateTaskStatus.useMutation({
+		onSuccess: () => {
+			void refetch();
+		},
 	});
 
 	const deleteTask = api.tasks.deleteTask.useMutation({
 		onSuccess: () => {
 			void refetch();
 		},
+		onError: (error, data) => {
+			setIsBeingDeleted(data.id);
+			console.log(error);
+		},
 	});
+
+	const confirmDeletionModal = (taskId: string) =>
+		modals.openConfirmModal({
+			title: 'Do you really wanna delete that item?',
+			centered: true,
+			labels: { confirm: 'Confirm', cancel: 'Cancel' },
+			onConfirm: () => {
+				setIsBeingDeleted(taskId);
+				deleteTask.mutate({ id: taskId });
+			},
+		});
+
+	const handleDeleteTask = (taskId: string) => {
+		confirmDeletionModal(taskId);
+	};
 
 	const filteredTasks =
 		taskAuthor === 'mine'
@@ -44,6 +67,11 @@ const Tasks: React.FC = () => {
 			alert('test');
 		}
 	};
+
+	useSubscribeToEvent('new-task', () => {
+		console.log('new task event received');
+		void refetch();
+	});
 
 	return (
 		<div className="flex w-full flex-col justify-center gap-4 md:max-w-[36rem] md:self-start">
@@ -69,36 +97,18 @@ const Tasks: React.FC = () => {
 				</button>
 			</div>
 			{filteredTasks?.map((task) => (
-				<div
+				<TaskElement
 					key={task.id}
-					className="relative rounded-lg bg-white p-4 hover:bg-blue-100 focus:bg-gray-100"
-				>
-					{task.title && (
-						<>
-							<span className="mr-20 mt-1 block text-xs text-gray-500 md:text-sm">
-								{task.title}
-							</span>
-							<hr className="my-2 mt-3" />
-						</>
-					)}
-
-					<p
-						className="mr-20 block text-sm md:text-base"
-						style={{ whiteSpace: 'pre-line' }}
-					>
-						{task.description}
-					</p>
-
-					<button
-						onClick={() => {
-							deleteTask.mutate({ id: task.id });
-							void refetch();
-						}}
-						className="absolute right-2 top-2 rounded-full bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
-					>
-						Delete
-					</button>
-				</div>
+					task={task}
+					deleteAction={() => {
+						handleDeleteTask(task.id);
+					}}
+					updateAction={() => {
+						updateTaskStatus.mutate({ id: task.id, completed: !task.completed });
+						void refetch();
+					}}
+					isBeingDeleted={isBeingDeleted === task.id}
+				/>
 			))}
 		</div>
 	);

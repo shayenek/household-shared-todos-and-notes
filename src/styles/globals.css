@@ -14,3 +14,11 @@ html {
 body {
     overflow-x: hidden;
 }
+
+.mantine-Input-wrapper button {
+    background-color: white;
+}
+
+.mantine-g7194 {
+    background-color: rgb(59 130 246);
+}

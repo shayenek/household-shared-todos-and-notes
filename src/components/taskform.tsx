@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { api } from '~/utils/api';
 
-const TaskForm: React.FC = () => {
+const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () => void }) => {
 	const { data: sessionData } = useSession();
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
 
@@ -23,12 +23,17 @@ const TaskForm: React.FC = () => {
 	const addTask = api.tasks.createTask.useMutation({
 		onSuccess: () => {
 			addTaskForm.reset();
+			onSubmit?.();
 			void refetch();
 		},
 	});
 
 	return (
-		<div className="w-full rounded-lg bg-white p-4 md:max-w-[20rem] md:self-start lg:min-w-[20rem]">
+		<div
+			className={`w-full rounded-lg bg-white p-4 md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
+				className ?? ''
+			}`}
+		>
 			<div className="flex justify-center gap-2">
 				<button
 					onClick={() => setFormType('note')}
@@ -47,7 +52,6 @@ const TaskForm: React.FC = () => {
 			{formType === 'note' && (
 				<form onSubmit={addTaskForm.onSubmit((values) => console.log(values))}>
 					<TextInput
-						withAsterisk
 						label="Task title"
 						placeholder="title"
 						{...addTaskForm.getInputProps('title')}

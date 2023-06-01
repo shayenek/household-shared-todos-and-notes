@@ -17,7 +17,7 @@ const Home: NextPage = () => {
 			<main className="flex min-h-screen flex-col items-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
 				{sessionData && (
 					<button
-						className="mt-4 rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20 md:absolute md:right-4"
+						className="mt-4 rounded-full bg-red-500 px-10 py-3 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4"
 						onClick={() => void signOut()}
 					>
 						Sign Out

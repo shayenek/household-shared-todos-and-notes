@@ -1,18 +1,15 @@
-import { TextInput, Button, Group, Textarea, Select, Input } from '@mantine/core';
+import { TextInput, Group, Textarea, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { IconCalendar } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { api } from '~/utils/api';
 
 const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () => void }) => {
 	const { data: sessionData } = useSession();
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
-	const [startDate, setStartDate] = useState<Date | null>(null);
-	const [startTime, setStartTime] = useState<string | null>(null);
-	const [endDate, setEndDate] = useState<Date | null>(null);
-	const [endTime, setEndTime] = useState<string | null>(null);
 
 	const { refetch } = api.tasks.getTasksForUser.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
@@ -61,7 +58,7 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 
 	return (
 		<div
-			className={`w-full rounded-lg bg-white p-4 md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
+			className={`w-full rounded-lg bg-[#1d1f20] p-4 md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
 				className ?? ''
 			}`}
 		>
@@ -79,12 +76,24 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 					Task
 				</button>
 			</div>
-			<hr className="my-4 border-gray-200" />
+			<hr className="my-2 mt-3 border-[#2d2f31] transition duration-200 ease-in-out" />
 			<form onSubmit={addTaskForm.onSubmit((values) => console.log(values))}>
 				<TextInput
 					label="Task title"
-					placeholder="title"
+					placeholder="Title"
 					{...addTaskForm.getInputProps('title')}
+					styles={{
+						label: {
+							color: '#fff',
+							fontSize: '0.75rem',
+						},
+						input: {
+							color: '#fff',
+							background: '#2d3338',
+							borderColor: '#2d3338',
+						},
+					}}
+					mb="sm"
 				/>
 
 				<Textarea
@@ -93,11 +102,24 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 					placeholder="desc"
 					minRows={8}
 					{...addTaskForm.getInputProps('description')}
+					styles={{
+						label: {
+							color: '#fff',
+							fontSize: '0.75rem',
+						},
+						input: {
+							color: '#fff',
+							background: '#2d3338',
+							borderColor: '#2d3338',
+						},
+					}}
+					mb="sm"
 				/>
 
 				{formType === 'task' && (
 					<>
 						<DatePickerInput
+							icon={<IconCalendar size="1.1rem" stroke={1.5} />}
 							clearable
 							valueFormat="DD-MM-YYYY"
 							label="Start date"
@@ -105,42 +127,95 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							maw={400}
 							mx="auto"
 							{...addTaskForm.getInputProps('startDate')}
+							styles={{
+								label: {
+									color: '#fff',
+									fontSize: '0.75rem',
+								},
+								input: {
+									color: '#fff',
+									background: '#2d3338!important',
+									borderColor: '#2d3338!important',
+								},
+							}}
+							mb="sm"
 						/>
 						<Select
 							label="Start time"
 							placeholder="Start time"
 							data={createTimesThroughDay()}
 							{...addTaskForm.getInputProps('startTime')}
+							styles={{
+								label: {
+									color: '#fff',
+									fontSize: '0.75rem',
+								},
+								input: {
+									color: '#fff',
+									background: '#2d3338!important',
+									borderColor: '#2d3338!important',
+								},
+							}}
+							mb="sm"
 						/>
 						<DatePickerInput
+							icon={<IconCalendar size="1.1rem" stroke={1.5} />}
 							clearable
 							valueFormat="DD-MM-YYYY"
 							label="End date"
 							placeholder="End date"
 							maw={400}
 							mx="auto"
-							minDate={startDate ?? undefined}
+							minDate={addTaskForm.values.startDate}
 							{...addTaskForm.getInputProps('endDate')}
+							styles={{
+								label: {
+									color: '#fff',
+									fontSize: '0.75rem',
+								},
+								input: {
+									color: '#fff',
+									background: '#2d3338!important',
+									borderColor: '#2d3338!important',
+								},
+								rightSection: {
+									background: '#2d3338!important',
+									borderColor: '#2d3338!important',
+								},
+							}}
+							mb="sm"
 						/>
 						<Select
 							label="End time"
 							placeholder="End time"
 							data={createTimesThroughDay()}
 							{...addTaskForm.getInputProps('endTime')}
+							styles={{
+								label: {
+									color: '#fff',
+									fontSize: '0.75rem',
+								},
+								input: {
+									color: '#fff',
+									background: '#2d3338!important',
+									borderColor: '#2d3338!important',
+								},
+							}}
+							mb="sm"
 						/>
 					</>
 				)}
 
 				<Group position="center" mt="md">
-					<Button
+					<button
 						onClick={() => {
 							addTask.mutate({ ...addTaskForm.values, type: formType });
 						}}
 						type="submit"
-						className="bg-blue-500 hover:bg-blue-600"
+						className="basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
 					>
 						Add {formType === 'task' ? 'task' : 'note'}
-					</Button>
+					</button>
 				</Group>
 			</form>
 		</div>

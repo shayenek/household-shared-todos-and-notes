@@ -1,16 +1,17 @@
+import { IconPlus } from '@tabler/icons-react';
 import { signOut } from 'next-auth/react';
 
 const MobileNavbar = ({ addNewButton }: { addNewButton: () => void }) => {
 	return (
-		<div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-1 bg-gray-200 p-1 shadow-main md:hidden">
+		<div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-1 bg-[#1d1f20] p-4 shadow-main md:hidden">
 			<button
 				onClick={addNewButton}
-				className="h-14 w-full rounded-sm bg-green-700 py-4 text-white hover:bg-green-800 md:hidden"
+				className="h-12 w-full rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
 			>
-				Add new
+				<IconPlus size="1.5rem" />
 			</button>
 			<button
-				className="h-14 rounded-sm bg-red-500 p-4 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4"
+				className="h-12 rounded-lg bg-red-500 px-4 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4"
 				onClick={() => void signOut()}
 			>
 				<svg

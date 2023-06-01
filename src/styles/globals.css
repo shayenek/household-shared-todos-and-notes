@@ -8,6 +8,10 @@
     font-family: 'Poppins', sans-serif;
 }
 
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #6d7076 !important;
+}
+
 html {
     width: 100vw;
 }
@@ -15,10 +19,25 @@ body {
     overflow-x: hidden;
 }
 
-.mantine-Input-wrapper button {
-    background-color: white;
+.mantine-1xk8bhn {
+    color: #fff;
+    background: #17181c;
+    border: 2px solid #2b3031;
+    border-radius: 0.5rem;
 }
-
+.mantine-1xk8bhn:hover {
+    color: #fff;
+    background: #2b3031;
+    border: 2px solid #2b3031;
+}
 .mantine-g7194 {
-    background-color: rgb(59 130 246);
+    color: #fff;
+    background: rgb(239 68 68);
+    border: 2px solid #2b3031;
+    border-radius: 0.5rem;
+}
+.mantine-g7194:hover {
+    color: #fff;
+    background: rgb(153 27 27);
+    border: 2px solid #2b3031;
 }

@@ -22,13 +22,13 @@ const TaskElement = ({
 		<div
 			key={task.id}
 			className={`relative overflow-hidden rounded-lg p-4 transition duration-200 ease-in-out ${
-				task.completed ? 'bg-green-100' : 'bg-white'
+				task.completed ? 'bg-green-100' : 'bg-[#1d1f20]'
 			}`}
 		>
 			{task.title && (
 				<>
 					<div className="flex items-center justify-between">
-						<span className="mr-20 mt-1 block text-xs text-gray-500 md:text-sm">
+						<span className="mr-20 mt-1 block text-xs font-bold text-[#e0e2e4] md:text-sm">
 							{task.title}
 						</span>
 						{task.type === 'task' && (
@@ -40,17 +40,20 @@ const TaskElement = ({
 					</div>
 					<hr
 						className={`my-2 mt-3 transition duration-200 ease-in-out ${
-							task.completed ? 'border-white' : 'border-gray-300'
+							task.completed ? 'border-white' : 'border-[#2d2f31]'
 						}`}
 					/>
 				</>
 			)}
 
-			<p className="mr-20 block text-sm md:text-base" style={{ whiteSpace: 'pre-line' }}>
+			<p
+				className="mr-20 block text-sm text-[#5f6163] md:text-base"
+				style={{ whiteSpace: 'pre-line' }}
+			>
 				{task.description}
 			</p>
 
-			<hr className="my-2 mt-3 transition duration-200 ease-in-out" />
+			<hr className="my-2 mt-3 border-[#2d2f31] transition duration-200 ease-in-out" />
 
 			<div className="flex justify-center gap-2">
 				{task.type === 'task' && (

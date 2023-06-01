@@ -38,7 +38,7 @@ const Home: NextPage = () => {
 						Sign Out
 					</button>
 				)}
-				<div className="container mt-14 flex flex-col items-center justify-center gap-12 p-4 md:mt-0 md:py-16">
+				<div className="container mb-20 mt-14 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16">
 					{!sessionData && (
 						<h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
 							Log In

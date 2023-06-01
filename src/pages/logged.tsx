@@ -10,18 +10,24 @@ import TopNavbar from '~/components/topnavbar';
 const Logged: React.FC = () => {
 	const [opened, { open, close }] = useDisclosure(false);
 
-	const [width, setWidth] = useState<number>(window.innerWidth);
-
 	const [taskAuthor, setTaskAuthor] = useState<string>('all');
 
-	function handleWindowSizeChange() {
-		setWidth(window.innerWidth);
-	}
+	const [width, setWidth] = useState<number>(0);
+
 	useEffect(() => {
-		window.addEventListener('resize', handleWindowSizeChange);
-		return () => {
-			window.removeEventListener('resize', handleWindowSizeChange);
+		const handleWindowSizeChange = () => {
+			if (typeof window !== 'undefined') {
+				setWidth(window.innerWidth);
+			}
 		};
+
+		if (typeof window !== 'undefined') {
+			setWidth(window.innerWidth);
+			window.addEventListener('resize', handleWindowSizeChange);
+			return () => {
+				window.removeEventListener('resize', handleWindowSizeChange);
+			};
+		}
 	}, []);
 
 	const isMobile = width <= 768;

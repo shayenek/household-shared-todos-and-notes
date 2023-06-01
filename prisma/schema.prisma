@@ -57,7 +57,6 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
-  notes         Note[]
 }
 
 model VerificationToken {
@@ -77,15 +76,5 @@ model Task {
   completed   Boolean  @default(false)
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String
-}
-
-model Note {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  title       String
-  description String?
-  completed   Boolean  @default(false)
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId    String
+  type        String   @default("note")
 }

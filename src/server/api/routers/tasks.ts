@@ -4,6 +4,7 @@ import {
     createTRPCRouter,
     protectedProcedure,
 } from "~/server/api/trpc";
+import { pusherServerClient } from "~/server/pusher";
 
 export const tasksRouter = createTRPCRouter({
     createTask: protectedProcedure
@@ -14,10 +15,14 @@ export const tasksRouter = createTRPCRouter({
                 authorId: z.string().optional(),
             }),
         )
-        .mutation(({ input, ctx }) => {
+        .mutation(async ({ input, ctx }) => {
             const { title, description } = input;
 
-            console.log(input);
+            await pusherServerClient.trigger(
+                `authorId-${ctx.session.user.id}`,
+                'new-task',
+                {}
+            )
 
             return ctx.prisma.task.create({
                 data: {

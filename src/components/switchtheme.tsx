@@ -1,15 +1,26 @@
+import { useEffect, useState } from 'react';
+
 import { type ThemeState, useThemeStore } from '~/store/store';
 
 const ThemeSwitcher = ({ size }: { size: string }) => {
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+	const [globalTheme, setGlobalTheme] = useState<'dark' | 'light'>('light');
 
 	const handleThemeChange: (theme: 'dark' | 'light') => void = (theme) => {
 		useThemeStore.setState({ theme });
 	};
 
+	useEffect(() => {
+		if (currentTheme === 'dark') {
+			setGlobalTheme('dark');
+		} else {
+			setGlobalTheme('light');
+		}
+	}, [currentTheme]);
+
 	return (
 		<>
-			{currentTheme === 'dark' ? (
+			{globalTheme === 'dark' ? (
 				<button
 					onClick={() => {
 						handleThemeChange('light');

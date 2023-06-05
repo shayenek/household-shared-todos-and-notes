@@ -1,3 +1,4 @@
+import { Loader } from '@mantine/core';
 import { type NextPage } from 'next';
 import Head from 'next/head';
 import { signIn, signOut, useSession } from 'next-auth/react';
@@ -80,7 +81,7 @@ const Home: NextPage = () => {
 						<div className="flex w-full flex-col items-center gap-2 md:mt-8">
 							{!sessionData && (
 								<button
-									className="rounded-full bg-white px-10 py-3 font-semibold text-black no-underline transition duration-200 hover:bg-sky-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+									className="rounded-full bg-white px-10 py-3 font-semibold text-black no-underline transition duration-200 hover:bg-blue-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
 									onClick={() => void signIn()}
 								>
 									Sign In
@@ -91,9 +92,12 @@ const Home: NextPage = () => {
 									{userData && userData.type === 'admin' ? (
 										<Logged isMobile={isMobile} />
 									) : (
-										<h1 className="text-4xl font-extrabold text-black dark:text-white">
-											Forbidden!
-										</h1>
+										<div className="flex items-center gap-4">
+											<h1 className="text-4xl font-extrabold text-black dark:text-white">
+												Hold tight!
+											</h1>
+											<Loader />
+										</div>
 									)}
 								</>
 							)}

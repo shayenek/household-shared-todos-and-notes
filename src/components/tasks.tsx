@@ -17,6 +17,7 @@ const Tasks = ({
 }) => {
 	const { data: sessionData } = useSession();
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
+	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
 
 	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery(undefined, {
@@ -31,6 +32,7 @@ const Tasks = ({
 
 	const deleteTask = api.tasks.deleteTask.useMutation({
 		onSuccess: () => {
+			setDeletionInProgress(false);
 			void refetch();
 		},
 		onError: (error, data) => {
@@ -66,6 +68,7 @@ const Tasks = ({
 			labels: { confirm: 'Confirm', cancel: 'Cancel' },
 			onConfirm: () => {
 				setIsBeingDeleted(taskId);
+				setDeletionInProgress(true);
 				deleteTask.mutate({ id: taskId });
 			},
 		});
@@ -116,23 +119,20 @@ const Tasks = ({
 	return (
 		<div className="flex w-full flex-col justify-center gap-4 md:max-w-[36rem] md:self-start">
 			<div className="align-center flex justify-between gap-2">
-				{/* <button
-					className="basis-1/2 bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-					onTouchStart={handleTouchStart}
-					onTouchEnd={handleTouchEnd}
-				>
-					Wszystkie
-				</button> */}
 				{!isMobile && (
 					<>
 						<button
-							className="basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
+							className={`basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500 ${
+								taskAuthor === 'all' ? 'bg-blue-500' : ''
+							}`}
 							onClick={() => setTaskAuthor('all')}
 						>
 							All
 						</button>
 						<button
-							className="basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
+							className={`basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500 ${
+								taskAuthor === 'mine' ? 'bg-blue-500' : ''
+							}`}
 							onClick={() => setTaskAuthor('mine')}
 						>
 							Mine
@@ -153,7 +153,9 @@ const Tasks = ({
 							void refetch();
 						}}
 						isBeingDeleted={isBeingDeleted === task.id}
+						deletionInProgress={deletionInProgress}
 						handleHashButtonClick={filterByHash}
+						activatedHashFilter={hashWord ? hashWord : ''}
 					/>
 				))}
 			</div>

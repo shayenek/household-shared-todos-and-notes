@@ -37,10 +37,16 @@ const isDarkColor = (color: string) => {
 	return false;
 };
 
-const TaskHeader: (taskTitle: string, handleClick: (buttonText: string) => void) => ReactNode = (
-	taskTitle,
-	handleClickWord
-) => {
+const TaskHeader: (
+	taskTitle: string,
+	handleClick: (buttonText: string) => void,
+	activatedHashFilter: string
+) => ReactNode = (taskTitle, handleClickWord, activatedHashFilter) => {
+	const handleClickWrapper: (text: string) => void = (text) => {
+		console.log(text, activatedHashFilter);
+		handleClickWord(text);
+	};
+
 	if (taskTitle.includes('#')) {
 		const taskTitleArray = taskTitle.split('#');
 		const firstPart = taskTitleArray[0]?.trim();
@@ -62,20 +68,23 @@ const TaskHeader: (taskTitle: string, handleClick: (buttonText: string) => void)
 							wordBgColor = wordBgColor.replace('[', '').replace(']', '');
 						}
 
-						const handleClickWrapper = () => {
-							handleClickWord(`#${cleanWord}`);
-						};
-
 						return (
 							<button
-								onClick={handleClickWrapper}
+								onClick={() => handleClickWrapper(`#${cleanWord}`)}
 								className={`mr-1 rounded-full px-2.5 py-1.5 text-xs font-bold${
 									isDarkColor(wordBgColor) ? ' text-white' : ' text-black'
 								}`}
-								style={{ backgroundColor: wordBgColor }}
+								style={{
+									backgroundColor:
+										activatedHashFilter !== cleanWord
+											? wordBgColor
+													.replace('rgb(', 'rgba(')
+													.replace(')', ', 0.5)')
+											: wordBgColor,
+								}}
 								key={cleanWord}
 							>
-								#{cleanWord.trim()}
+								#{cleanWord}
 							</button>
 						);
 					})}
@@ -92,13 +101,17 @@ const TaskElement = ({
 	deleteAction,
 	updateAction,
 	isBeingDeleted,
+	deletionInProgress,
 	handleHashButtonClick,
+	activatedHashFilter,
 }: {
 	task: Task;
 	deleteAction: () => void;
 	updateAction: () => void;
 	isBeingDeleted: boolean;
+	deletionInProgress: boolean;
 	handleHashButtonClick: (buttonText: string) => void;
+	activatedHashFilter: string;
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 
@@ -106,10 +119,6 @@ const TaskElement = ({
 	const endDate = task.endDate;
 	const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : '';
 	const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : '';
-
-	const handleButtonClick = (buttonText: string) => {
-		handleHashButtonClick(buttonText);
-	};
 
 	const handleTouchStart = () => {
 		setTimer(setTimeout(onLongPress, 500)); // Adjust the duration as needed
@@ -139,7 +148,7 @@ const TaskElement = ({
 				<>
 					<div className="flex items-center justify-between">
 						<div className="mt-1 flex w-full items-center justify-between text-xs font-bold text-[#e0e2e4] md:text-sm">
-							{TaskHeader(task.title, handleButtonClick)}
+							{TaskHeader(task.title, handleHashButtonClick, activatedHashFilter)}
 						</div>
 						{task.type === 'task' && (
 							<span className="text-xs">
@@ -184,7 +193,10 @@ const TaskElement = ({
 				)}
 				<button
 					onClick={deleteAction}
-					className="w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800"
+					className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
+						deletionInProgress ? 'opacity-50' : 'opacity-100'
+					}`}
+					disabled={deletionInProgress || isBeingDeleted}
 				>
 					Delete
 				</button>

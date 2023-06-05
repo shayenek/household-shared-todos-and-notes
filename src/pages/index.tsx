@@ -91,7 +91,7 @@ const Home: NextPage = () => {
 									{userData && userData.type === 'admin' ? (
 										<Logged isMobile={isMobile} />
 									) : (
-										<h1 className="text-4xl font-extrabold text-white">
+										<h1 className="text-4xl font-extrabold text-black dark:text-white">
 											Forbidden!
 										</h1>
 									)}
@@ -100,11 +100,11 @@ const Home: NextPage = () => {
 						</div>
 					</div>
 				</section>
-				{!isMobile && (
+				{!isMobile || !sessionData ? (
 					<div className="fixed bottom-5 right-5">
 						<ThemeSwitcher size="h-[32px] w-[64px]" />
 					</div>
-				)}
+				) : null}
 			</main>
 		</>
 	);

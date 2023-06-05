@@ -3,22 +3,16 @@ import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 
 import TaskElement from '~/components/taskitem';
+import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 
-const Tasks = ({
-	isMobile,
-	taskAuthor,
-	setTaskAuthor,
-}: {
-	isMobile: boolean;
-	taskAuthor: string;
-	setTaskAuthor: (display: string) => void;
-}) => {
+const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const { data: sessionData } = useSession();
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
+	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
 
 	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
@@ -116,22 +110,26 @@ const Tasks = ({
 		void refetch();
 	});
 
+	const setTaskAuthor = (author: 'all' | 'mine') => {
+		useTaskAuthorStore.setState({ taskAuthor: author });
+	};
+
 	return (
 		<div className="flex w-full flex-col justify-center gap-4 md:max-w-[36rem] md:self-start">
 			<div className="align-center flex justify-between gap-2">
 				{!isMobile && (
 					<>
 						<button
-							className={`basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500 ${
-								taskAuthor === 'all' ? 'bg-blue-500' : ''
+							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+								taskAuthor === 'all' ? '!bg-blue-500 text-white' : ''
 							}`}
 							onClick={() => setTaskAuthor('all')}
 						>
 							All
 						</button>
 						<button
-							className={`basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500 ${
-								taskAuthor === 'mine' ? 'bg-blue-500' : ''
+							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+								taskAuthor === 'mine' ? '!bg-blue-500 text-white' : ''
 							}`}
 							onClick={() => setTaskAuthor('mine')}
 						>
@@ -163,22 +161,14 @@ const Tasks = ({
 	);
 };
 
-export default function TasksWrapper({
-	isMobile,
-	taskAuthor,
-	setTaskAuthor,
-}: {
-	isMobile: boolean;
-	taskAuthor: string;
-	setTaskAuthor: (display: string) => void;
-}) {
+export default function TasksWrapper({ isMobile }: { isMobile: boolean }) {
 	const { data: sessionData } = useSession();
 
 	if (!sessionData || !sessionData.user?.id) return null;
 
 	return (
 		<PusherProvider slug={`user-shayenek`}>
-			<Tasks taskAuthor={taskAuthor} setTaskAuthor={setTaskAuthor} isMobile={isMobile} />
+			<Tasks isMobile={isMobile} />
 		</PusherProvider>
 	);
 }

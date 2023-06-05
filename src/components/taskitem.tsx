@@ -71,7 +71,7 @@ const TaskHeader: (
 						return (
 							<button
 								onClick={() => handleClickWrapper(`#${cleanWord}`)}
-								className={`mr-1 rounded-full px-2.5 py-1.5 text-xs font-bold${
+								className={`rounded-full px-2.5 py-1.5 text-xs font-bold${
 									isDarkColor(wordBgColor) ? ' text-white' : ' text-black'
 								}`}
 								style={{
@@ -139,7 +139,7 @@ const TaskElement = ({
 		<div
 			key={task.id}
 			className={`relative overflow-hidden rounded-lg p-4 transition duration-200 ease-in-out ${
-				task.completed ? 'bg-green-100' : 'bg-[#1d1f20]'
+				task.completed ? 'bg-green-100' : 'bg-white dark:bg-[#1d1f20]'
 			}`}
 			onTouchStart={handleTouchStart}
 			onTouchEnd={handleTouchEnd}
@@ -147,7 +147,7 @@ const TaskElement = ({
 			{task.title && (
 				<>
 					<div className="flex items-center justify-between">
-						<div className="mt-1 flex w-full items-center justify-between text-xs font-bold text-[#e0e2e4] md:text-sm">
+						<div className="flex w-full items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
 							{TaskHeader(task.title, handleHashButtonClick, activatedHashFilter)}
 						</div>
 						{task.type === 'task' && (
@@ -159,21 +159,23 @@ const TaskElement = ({
 					</div>
 					<hr
 						className={`my-2 mt-3 transition duration-200 ease-in-out ${
-							task.completed ? 'border-white' : 'border-[#2d2f31]'
+							task.completed
+								? 'border-white'
+								: 'border-[#dce2e7] dark:border-[#2d2f31]'
 						}`}
 					/>
 				</>
 			)}
 
 			<p
-				className="mr-20 block text-sm text-[#5f6163] md:text-base"
+				className="mr-20 block text-sm text-[#7c7e82] dark:text-[#5f6163] md:text-base"
 				style={{ whiteSpace: 'pre-line' }}
 			>
 				{task.description}
 			</p>
 
 			{task.description && (
-				<hr className="my-2 mt-3 border-[#2d2f31] transition duration-200 ease-in-out" />
+				<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
 			)}
 
 			<div className="flex justify-center gap-2">

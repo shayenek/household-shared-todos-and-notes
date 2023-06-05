@@ -1,17 +1,22 @@
 import { IconPlus } from '@tabler/icons-react';
 import { signOut } from 'next-auth/react';
 
+import ThemeSwitcher from './switchtheme';
+
 const MobileNavbar = ({ addNewButton }: { addNewButton: () => void }) => {
 	return (
-		<div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-1 bg-[#1d1f20] p-4 shadow-main md:hidden">
+		<div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-white p-4 shadow-main transition duration-200 dark:bg-[#1d1f20] md:hidden ">
 			<button
 				onClick={addNewButton}
-				className="h-12 w-full rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
+				className="flex h-12 w-full items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white "
 			>
 				<IconPlus size="1.5rem" />
 			</button>
+			<div className="flex h-12 items-center rounded-lg border-2 border-[#eeedf0] bg-white font-semibold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
+				<ThemeSwitcher size="h-[26px] w-[52px]" />
+			</div>
 			<button
-				className="h-12 rounded-lg bg-red-500 px-4 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4"
+				className="h-12 rounded-lg border-2 bg-red-500 px-3 font-semibold text-white no-underline transition duration-200 dark:border-[#1d1f20]"
 				onClick={() => void signOut()}
 			>
 				<svg

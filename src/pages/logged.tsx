@@ -1,36 +1,15 @@
 import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useEffect, useState } from 'react';
 
 import MobileNavbar from '~/components/mobilenavbar';
 import TaskForm from '~/components/taskform';
 import Tasks from '~/components/tasks';
 import TopNavbar from '~/components/topnavbar';
+import { type ThemeState, useThemeStore } from '~/store/store';
 
-const Logged: React.FC = () => {
+const Logged = ({ isMobile }: { isMobile: boolean }) => {
 	const [opened, { open, close }] = useDisclosure(false);
-
-	const [taskAuthor, setTaskAuthor] = useState<string>('all');
-
-	const [width, setWidth] = useState<number>(0);
-
-	useEffect(() => {
-		const handleWindowSizeChange = () => {
-			if (typeof window !== 'undefined') {
-				setWidth(window.innerWidth);
-			}
-		};
-
-		if (typeof window !== 'undefined') {
-			setWidth(window.innerWidth);
-			window.addEventListener('resize', handleWindowSizeChange);
-			return () => {
-				window.removeEventListener('resize', handleWindowSizeChange);
-			};
-		}
-	}, []);
-
-	const isMobile = width <= 768;
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 
 	return (
 		<div className="flex w-full flex-col items-center justify-center gap-4 md:flex-row md:gap-12">
@@ -41,23 +20,24 @@ const Logged: React.FC = () => {
 				centered
 				styles={{
 					content: {
-						background: '#1d1f20',
+						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
 						borderWidth: '2px',
-						borderColor: '#2b3031',
+						borderColor: currentTheme === 'dark' ? '#2b3031' : '#ecf0f3',
 					},
 					header: {
-						color: '#fff',
-						background: '#1d1f20',
+						color: currentTheme === 'dark' ? '#fff' : '#030910',
+						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
 					},
 				}}
+				className={currentTheme}
 			>
 				<TaskForm onSubmit={close} />
 			</Modal>
 
 			{!isMobile && <TaskForm />}
 
-			<Tasks taskAuthor={taskAuthor} setTaskAuthor={setTaskAuthor} isMobile={isMobile} />
-			{isMobile && <TopNavbar setTaskAuthor={setTaskAuthor} />}
+			<Tasks isMobile={isMobile} />
+			{isMobile && <TopNavbar />}
 			{isMobile && <MobileNavbar addNewButton={open} />}
 		</div>
 	);

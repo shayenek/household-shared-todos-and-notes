@@ -5,11 +5,13 @@ import { IconCalendar } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 
+import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
 
 const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () => void }) => {
 	const { data: sessionData } = useSession();
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 
 	const { refetch } = api.tasks.getTasksForUser.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
@@ -58,7 +60,7 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 
 	return (
 		<div
-			className={`w-full rounded-lg bg-[#1d1f20] p-4 md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
+			className={`w-full rounded-lg bg-white p-4 transition duration-200 dark:bg-[#1d1f20] md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
 				className ?? ''
 			}`}
 		>
@@ -76,7 +78,7 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 					Task
 				</button>
 			</div>
-			<hr className="my-2 mt-3 border-[#2d2f31] transition duration-200 ease-in-out" />
+			<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
 			<form onSubmit={addTaskForm.onSubmit((values) => console.log(values))}>
 				<TextInput
 					label="Task title"
@@ -84,13 +86,15 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 					{...addTaskForm.getInputProps('title')}
 					styles={{
 						label: {
-							color: '#fff',
+							color: currentTheme === 'dark' ? '#fff' : '#030910',
 							fontSize: '0.75rem',
+							transition: 'all 200ms',
 						},
 						input: {
-							color: '#fff',
-							background: '#2d3338',
-							borderColor: '#2d3338',
+							color: currentTheme === 'dark' ? '#fff' : '#030910',
+							background: currentTheme === 'dark' ? '#17181c' : '#ecf0f3',
+							borderColor: currentTheme === 'dark' ? '#2d3338' : '#ecf0f3',
+							transition: 'all 200ms',
 						},
 					}}
 					mb="sm"
@@ -104,13 +108,15 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 					{...addTaskForm.getInputProps('description')}
 					styles={{
 						label: {
-							color: '#fff',
+							color: currentTheme === 'dark' ? '#fff' : '#030910',
 							fontSize: '0.75rem',
+							transition: 'all 200ms',
 						},
 						input: {
-							color: '#fff',
-							background: '#2d3338',
-							borderColor: '#2d3338',
+							color: currentTheme === 'dark' ? '#fff' : '#030910',
+							background: currentTheme === 'dark' ? '#17181c' : '#ecf0f3',
+							borderColor: currentTheme === 'dark' ? '#2d3338' : '#ecf0f3',
+							transition: 'all 200ms',
 						},
 					}}
 					mb="sm"
@@ -129,13 +135,21 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							{...addTaskForm.getInputProps('startDate')}
 							styles={{
 								label: {
-									color: '#fff',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
 									fontSize: '0.75rem',
+									transition: 'all 200ms',
 								},
 								input: {
-									color: '#fff',
-									background: '#2d3338!important',
-									borderColor: '#2d3338!important',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
+									background:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									borderColor:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									transition: 'all 200ms',
 								},
 							}}
 							mb="sm"
@@ -147,13 +161,21 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							{...addTaskForm.getInputProps('startTime')}
 							styles={{
 								label: {
-									color: '#fff',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
 									fontSize: '0.75rem',
+									transition: 'all 200ms',
 								},
 								input: {
-									color: '#fff',
-									background: '#2d3338!important',
-									borderColor: '#2d3338!important',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
+									background:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									borderColor:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									transition: 'all 200ms',
 								},
 							}}
 							mb="sm"
@@ -170,17 +192,32 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							{...addTaskForm.getInputProps('endDate')}
 							styles={{
 								label: {
-									color: '#fff',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
 									fontSize: '0.75rem',
+									transition: 'all 200ms',
 								},
 								input: {
-									color: '#fff',
-									background: '#2d3338!important',
-									borderColor: '#2d3338!important',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
+									background:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									borderColor:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									transition: 'all 200ms',
 								},
 								rightSection: {
-									background: '#2d3338!important',
-									borderColor: '#2d3338!important',
+									background:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									borderColor:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									transition: 'all 200ms',
 								},
 							}}
 							mb="sm"
@@ -192,13 +229,21 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							{...addTaskForm.getInputProps('endTime')}
 							styles={{
 								label: {
-									color: '#fff',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
 									fontSize: '0.75rem',
+									transition: 'all 200ms',
 								},
 								input: {
-									color: '#fff',
-									background: '#2d3338!important',
-									borderColor: '#2d3338!important',
+									color: currentTheme === 'dark' ? '#fff' : '#030910',
+									background:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									borderColor:
+										currentTheme === 'dark'
+											? '#2d3338!important'
+											: '#ecf0f3!important',
+									transition: 'all 200ms',
 								},
 							}}
 							mb="sm"
@@ -212,7 +257,7 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 							addTask.mutate({ ...addTaskForm.values, type: formType });
 						}}
 						type="submit"
-						className="basis-1/2 rounded-lg border-2 border-[#2b3031] bg-[#17181c] p-2 text-sm text-white hover:bg-blue-500"
+						className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white"
 					>
 						Add {formType === 'task' ? 'task' : 'note'}
 					</button>

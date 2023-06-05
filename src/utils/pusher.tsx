@@ -45,7 +45,6 @@ const createPusherStore = ({ slug }: PusherProps) => {
 		};
 	});
 
-	// Update helper that sets 'members' to contents of presence channel's current members
 	const updateMembers = () => {
 		store.setState(() => ({
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -53,7 +52,6 @@ const createPusherStore = ({ slug }: PusherProps) => {
 		}));
 	};
 
-	// Bind all "present users changed" events to trigger updateMembers
 	presenceChannel.bind('pusher:subscription_succeeded', updateMembers);
 	presenceChannel.bind('pusher:member_added', updateMembers);
 	presenceChannel.bind('pusher:member_removed', updateMembers);
@@ -61,17 +59,9 @@ const createPusherStore = ({ slug }: PusherProps) => {
 	return store;
 };
 
-/**
- * Section 2: "The Context Provider"
- *
- */
 type PusherStore = ReturnType<typeof createPusherStore>;
 export const PusherContext = createContext<PusherStore | null>(null);
 
-/**
- * This provider is the thing you mount in the app to "give access to Pusher"
- *
- */
 type PusherProviderProps = React.PropsWithChildren<PusherProps>;
 
 export const PusherProvider = ({ slug, children }: PusherProviderProps) => {
@@ -93,13 +83,6 @@ export const PusherProvider = ({ slug, children }: PusherProviderProps) => {
 	return <PusherContext.Provider value={store}>{children}</PusherContext.Provider>;
 };
 
-/**
- * Section 3: "The Hooks"
- *
- * The exported hooks you use to interact with this store (in this case just an event sub)
- *
- * (I really want useEvent tbh)
- */
 function usePusherStore<T>(
 	selector: (state: PusherState) => T,
 	equalityFn?: (left: T, right: T) => boolean
@@ -126,7 +109,18 @@ export function useSubscribeToEvent<MessageType>(
 		const reference = (data: MessageType) => {
 			stableCallback.current(data);
 		};
-		channel.bind(eventName, reference);
+		if (eventName.includes(',')) {
+			eventName
+				.replace(' ', '')
+				.split(',')
+				.forEach((event) => {
+					console.log('multiple events bind');
+					channel.bind(event, reference);
+				});
+		} else {
+			console.log('single event bind');
+			channel.bind(eventName, reference);
+		}
 
 		console.log(channel);
 

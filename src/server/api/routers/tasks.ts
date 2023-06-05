@@ -3,6 +3,24 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
 import { pusherServerClient } from '~/server/pusher';
 
+const wordToRgbColor: (word: string) => string = (word) => {
+	let hashCode = 0;
+	for (let i = 0; i < word.length; i++) {
+		hashCode = word.charCodeAt(i) + ((hashCode << 5) - hashCode);
+	}
+
+	let rgb = 'rgb(';
+	for (let j = 0; j < 3; j++) {
+		const value = (hashCode >> (j * 4)) & 0xff;
+		const limitedValue = Math.max(5, Math.min(250, value));
+		rgb += j > 0 ? ',' : '';
+		rgb += limitedValue.toString();
+	}
+
+	rgb += ')';
+	return rgb;
+};
+
 export const tasksRouter = createTRPCRouter({
 	createTask: protectedProcedure
 		.input(
@@ -20,9 +38,27 @@ export const tasksRouter = createTRPCRouter({
 		.mutation(async ({ input, ctx }) => {
 			const { title, description, type, startDate, startTime, endDate, endTime } = input;
 
+			let newTitle = '';
+			if (title.includes('#')) {
+				const taskTitleArray = title.split('#');
+				const firstPart = taskTitleArray[0]?.trim();
+				const hashtags = taskTitleArray.slice(1);
+
+				const modifiedHashtags = hashtags.map((hashtag) => {
+					const trimmedHashtag = hashtag.trim();
+					return '#' + trimmedHashtag + '-[' + wordToRgbColor(trimmedHashtag) + ']';
+				});
+
+				if (firstPart) {
+					newTitle = firstPart + ' ' + modifiedHashtags.join(' ');
+				} else {
+					newTitle = modifiedHashtags.join(' ');
+				}
+			}
+
 			const taskItem = await ctx.prisma.task.create({
 				data: {
-					title,
+					title: newTitle,
 					description,
 					author: { connect: { id: ctx.session.user.id } },
 					type,
@@ -62,14 +98,18 @@ export const tasksRouter = createTRPCRouter({
 				id: z.string(),
 			})
 		)
-		.mutation(({ input, ctx }) => {
+		.mutation(async ({ input, ctx }) => {
 			const id = input.id;
 
-			return ctx.prisma.task.delete({
+			const deleteTask = await ctx.prisma.task.delete({
 				where: {
 					id,
 				},
 			});
+
+			await pusherServerClient.trigger(`user-shayenek`, 'delete-task', {});
+
+			return deleteTask;
 		}),
 	getAllTasks: protectedProcedure.query(({ ctx }) => {
 		return ctx.prisma.task.findMany({

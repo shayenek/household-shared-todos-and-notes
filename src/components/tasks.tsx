@@ -17,6 +17,7 @@ const Tasks = ({
 }) => {
 	const { data: sessionData } = useSession();
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
+	const [hashWord, setHashWord] = useState<string | null>(null);
 
 	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
@@ -73,33 +74,42 @@ const Tasks = ({
 		confirmDeletionModal(taskId);
 	};
 
-	const filteredTasks =
+	let filteredTasks =
 		taskAuthor === 'mine'
 			? allTasksData?.filter((task) => task.authorId === sessionData?.user?.id)
 			: allTasksData;
 
-	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+	const filterByHash = (buttonText: string) => {
+		const cleanedButtonText = buttonText.replace('#', '').replace(' ', '');
+		const cleanedHashWord = hashWord ? hashWord.replace('#', '').replace(' ', '') : null;
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const handleTouchStart = () => {
-		setTimer(setTimeout(onLongPress, 500)); // Adjust the duration as needed
-	};
-
-	const onLongPress = () => {
-		alert('long press is triggered');
-	};
-
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const handleTouchEnd = () => {
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		clearTimeout(timer!);
-		if (timer) {
-			alert('test');
+		if (cleanedButtonText === cleanedHashWord) {
+			setHashWord(null);
+			return;
 		}
+
+		setHashWord(cleanedButtonText);
 	};
 
-	useSubscribeToEvent('new-task', () => {
-		console.log('new task event received');
+	if (hashWord) {
+		filteredTasks = filteredTasks?.filter((task) => {
+			const words = task.title.split(' ');
+			const filteredWords = words.filter((word) => {
+				if (word.includes('#')) {
+					const cleanedWord = word.replace('#', '').replace(' ', '').split('-')[0];
+					const cleanedHash = hashWord.replace(' ', '').replace('#', '');
+					if (cleanedWord === cleanedHash) {
+						return true;
+					}
+				}
+				return false;
+			});
+			return filteredWords.length > 0;
+		});
+	}
+
+	useSubscribeToEvent('new-task, delete-task', () => {
+		console.log('event received');
 		void refetch();
 	});
 
@@ -143,6 +153,7 @@ const Tasks = ({
 							void refetch();
 						}}
 						isBeingDeleted={isBeingDeleted === task.id}
+						handleHashButtonClick={filterByHash}
 					/>
 				))}
 			</div>
@@ -150,7 +161,6 @@ const Tasks = ({
 	);
 };
 
-// Can this code below take props from parent?
 export default function TasksWrapper({
 	isMobile,
 	taskAuthor,

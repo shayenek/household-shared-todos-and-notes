@@ -73,14 +73,14 @@ const Home: NextPage = () => {
 					)}
 					<div className="container mb-20 mt-14 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16">
 						{!sessionData && (
-							<h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
+							<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
 								Log In
 							</h1>
 						)}
 						<div className="flex w-full flex-col items-center gap-2 md:mt-8">
 							{!sessionData && (
 								<button
-									className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
+									className="rounded-full bg-white px-10 py-3 font-semibold text-black no-underline transition duration-200 hover:bg-sky-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
 									onClick={() => void signIn()}
 								>
 									Sign In

@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import TaskElement from '~/components/taskitem';
 import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
+import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 
@@ -108,7 +109,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		void refetch();
 	});
 
-	const setTaskAuthor = (author: 'all' | 'mine') => {
+	const setTaskAuthor = (author: TaskAuthorType) => {
 		useTaskAuthorStore.setState({ taskAuthor: author });
 	};
 

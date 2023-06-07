@@ -1,9 +1,10 @@
 import { useTaskAuthorStore, type TaskAuthorState } from '~/store/store';
+import { type TaskAuthorType } from '~/types/author';
 
 const MobileNavbar = () => {
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
 
-	const handleAuthorChange = (author: 'all' | 'mine') => {
+	const handleAuthorChange = (author: TaskAuthorType) => {
 		useTaskAuthorStore.setState({ taskAuthor: author });
 	};
 	return (

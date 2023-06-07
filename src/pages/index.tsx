@@ -1,6 +1,7 @@
 import { TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { IconLock } from '@tabler/icons-react';
 import { setCookie, getCookie, deleteCookie } from 'cookies-next';
 import { type NextPage } from 'next';
 import Head from 'next/head';
@@ -152,7 +153,7 @@ const Home: NextPage = () => {
 										onSubmit={loginCodeForm.onSubmit((values) =>
 											console.log(values)
 										)}
-										className="flex w-60 flex-col items-center gap-2 rounded-lg bg-white p-3"
+										className="flex w-60 flex-col items-center gap-2 rounded-lg bg-white p-3 transition duration-200 dark:bg-white/10"
 									>
 										<TextInput
 											placeholder="Or use login code instead"
@@ -172,6 +173,7 @@ const Home: NextPage = () => {
 													transition: 'all 200ms',
 												},
 											}}
+											icon={<IconLock size="1rem" />}
 											mb="sm"
 										/>
 										<button
@@ -179,7 +181,7 @@ const Home: NextPage = () => {
 												checkLoginCode.mutate({ ...loginCodeForm.values });
 											}}
 											type="submit"
-											className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 px-6 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+											className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 px-6 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 hover:text-white dark:border-[#2b3031] dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
 										>
 											Login
 										</button>

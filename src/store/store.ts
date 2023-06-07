@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 
+import { type TaskAuthorType } from '~/types/author';
+
 export interface ThemeState {
 	theme: 'light' | 'dark';
 	setTheme: (theme: 'light' | 'dark') => void;
 }
 
 export interface TaskAuthorState {
-	taskAuthor: 'all' | 'mine';
-	setTaskAuthor: (taskAuthor: 'all' | 'mine') => void;
+	taskAuthor: TaskAuthorType;
+	setTaskAuthor: (taskAuthor: TaskAuthorType) => void;
 }
 
 export const useThemeStore = create<ThemeState>()((set) => ({
@@ -22,7 +24,7 @@ export const useThemeStore = create<ThemeState>()((set) => ({
 
 export const useTaskAuthorStore = create<TaskAuthorState>()((set) => ({
 	taskAuthor: 'all',
-	setTaskAuthor: (taskAuthor: 'all' | 'mine') => set({ taskAuthor }),
+	setTaskAuthor: (taskAuthor: TaskAuthorType) => set({ taskAuthor }),
 }));
 
 export interface AuthorizedUserState {

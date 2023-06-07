@@ -1,5 +1,6 @@
 import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useSession } from 'next-auth/react';
 
 import MobileNavbar from '~/components/mobilenavbar';
 import TaskForm from '~/components/taskform';
@@ -10,6 +11,7 @@ import { type ThemeState, useThemeStore } from '~/store/store';
 const Logged = ({ isMobile }: { isMobile: boolean }) => {
 	const [opened, { open, close }] = useDisclosure(false);
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+	const { data: sessionData } = useSession();
 
 	return (
 		<div className="flex w-full flex-col items-center justify-center gap-4 md:flex-row md:gap-12">
@@ -34,7 +36,7 @@ const Logged = ({ isMobile }: { isMobile: boolean }) => {
 				<TaskForm onSubmit={close} />
 			</Modal>
 
-			{!isMobile && <TaskForm />}
+			{!isMobile && sessionData && <TaskForm />}
 
 			<Tasks isMobile={isMobile} />
 			{isMobile && <TopNavbar />}

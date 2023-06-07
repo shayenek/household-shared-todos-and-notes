@@ -14,9 +14,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const [hashWord, setHashWord] = useState<string | null>(null);
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
 
-	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery(undefined, {
-		enabled: sessionData?.user !== undefined,
-	});
+	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery();
 
 	const updateTaskStatus = api.tasks.updateTaskStatus.useMutation({
 		onSuccess: () => {
@@ -115,9 +113,13 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	};
 
 	return (
-		<div className="flex w-full flex-col justify-center gap-4 md:max-w-[36rem] md:self-start">
+		<div
+			className={`flex w-full flex-col justify-center gap-4 md:self-start ${
+				sessionData ? 'md:max-w-[36rem]' : ''
+			}`}
+		>
 			<div className="align-center flex justify-between gap-2">
-				{!isMobile && (
+				{!isMobile && sessionData && (
 					<>
 						<button
 							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
@@ -162,10 +164,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 };
 
 export default function TasksWrapper({ isMobile }: { isMobile: boolean }) {
-	const { data: sessionData } = useSession();
-
-	if (!sessionData || !sessionData.user?.id) return null;
-
 	return (
 		<PusherProvider slug={`user-shayenek`}>
 			<Tasks isMobile={isMobile} />

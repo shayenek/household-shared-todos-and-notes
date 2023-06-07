@@ -1,25 +1,46 @@
-import { Loader } from '@mantine/core';
+import { TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { notifications } from '@mantine/notifications';
+import { setCookie, getCookie, deleteCookie } from 'cookies-next';
 import { type NextPage } from 'next';
 import Head from 'next/head';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import ThemeSwitcher from '~/components/switchtheme';
-import { type ThemeState, useThemeStore } from '~/store/store';
+import { useAuthorizedUserStore, type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
 
 import Logged from './logged';
 
 const Home: NextPage = () => {
 	const { data: sessionData } = useSession();
+
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 	const [globalTheme, setGlobalTheme] = useState<'dark' | 'light'>('light');
+
+	const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
 
 	const { data: userData } = api.users.getUserData.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
 	});
 
 	const [width, setWidth] = useState<number>(0);
+
+	const checkSessionToken = api.login.checkSession.useMutation({
+		onSuccess: () => {
+			setIsAuthorized(true);
+			useAuthorizedUserStore.setState({ isAuthorized: true });
+		},
+	});
+
+	useEffect(() => {
+		const sessionToken = getCookie('sessionToken') as string;
+
+		if (sessionToken) {
+			checkSessionToken.mutate({ sessionToken: sessionToken });
+		}
+	}, [checkSessionToken]);
 
 	useEffect(() => {
 		const handleWindowSizeChange = () => {
@@ -40,20 +61,60 @@ const Home: NextPage = () => {
 	const isMobile = width <= 768;
 
 	useEffect(() => {
-		if (sessionData?.user && userData && userData.type === 'user') {
-			setTimeout(() => {
-				void signOut();
-			}, 1000);
-		}
-	}, [sessionData?.user, userData]);
-
-	useEffect(() => {
 		if (currentTheme === 'dark') {
 			setGlobalTheme('dark');
 		} else {
 			setGlobalTheme('light');
 		}
 	}, [currentTheme]);
+
+	const loginCodeForm = useForm({
+		initialValues: {
+			loginCode: '',
+		},
+	});
+
+	const checkLoginCode = api.login.checkLoginCode.useMutation({
+		onSuccess: (data) => {
+			if (data) {
+				setCookie('sessionToken', data, {
+					maxAge: 30 * 24 * 60 * 60,
+					path: '/',
+				});
+				setIsAuthorized(true);
+				useAuthorizedUserStore.setState({ isAuthorized: true });
+			}
+			loginCodeForm.reset();
+		},
+	});
+
+	useEffect(() => {
+		if (sessionData) {
+			if (userData) {
+				if (userData.type === 'admin') {
+					setIsAuthorized(true);
+					useAuthorizedUserStore.setState({ isAuthorized: true });
+				} else {
+					notifications.show({
+						title: 'Error',
+						message: 'You are not authorized to use this app',
+						color: 'red',
+					});
+					void signOut();
+				}
+			}
+		} else {
+			setIsAuthorized(false);
+			useAuthorizedUserStore.setState({ isAuthorized: false });
+		}
+	}, [sessionData, userData]);
+
+	const handleSignOut = async () => {
+		await signOut();
+		setIsAuthorized(false);
+		useAuthorizedUserStore.setState({ isAuthorized: false });
+		deleteCookie('sessionToken');
+	};
 
 	return (
 		<>
@@ -64,47 +125,72 @@ const Home: NextPage = () => {
 			</Head>
 			<main className={globalTheme}>
 				<section className="flex min-h-screen flex-col items-center bg-[#f4f6f8] transition duration-200 dark:bg-[#101213] ">
-					{sessionData && (
+					{isAuthorized && (
 						<button
 							className="mt-4 hidden rounded-full bg-red-500 px-10 py-3 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4 md:block"
-							onClick={() => void signOut()}
+							onClick={() => void handleSignOut()}
 						>
 							Sign Out
 						</button>
 					)}
 					<div className="container mb-20 mt-14 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16">
-						{!sessionData && (
+						{!isAuthorized && (
 							<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
 								Log In
 							</h1>
 						)}
 						<div className="flex w-full flex-col items-center gap-2 md:mt-8">
-							{!sessionData && (
-								<button
-									className="rounded-full bg-white px-10 py-3 font-semibold text-black no-underline transition duration-200 hover:bg-blue-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-									onClick={() => void signIn()}
-								>
-									Sign In
-								</button>
-							)}
-							{sessionData && (
+							{!isAuthorized && (
 								<>
-									{userData && userData.type === 'admin' ? (
-										<Logged isMobile={isMobile} />
-									) : (
-										<div className="flex items-center gap-4">
-											<h1 className="text-4xl font-extrabold text-black dark:text-white">
-												Hold tight!
-											</h1>
-											<Loader />
-										</div>
-									)}
+									<button
+										className="w-60 rounded-lg bg-white px-10 py-3 font-semibold text-black no-underline transition duration-200 hover:bg-blue-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+										onClick={() => void signIn()}
+									>
+										Sign In
+									</button>
+									<form
+										onSubmit={loginCodeForm.onSubmit((values) =>
+											console.log(values)
+										)}
+										className="flex w-60 flex-col items-center gap-2 rounded-lg bg-white p-3"
+									>
+										<TextInput
+											placeholder="Or use login code instead"
+											{...loginCodeForm.getInputProps('loginCode')}
+											styles={{
+												input: {
+													color:
+														globalTheme === 'dark' ? '#fff' : '#030910',
+													background:
+														globalTheme === 'dark'
+															? '#17181c'
+															: '#ecf0f3',
+													borderColor:
+														globalTheme === 'dark'
+															? '#2d3338'
+															: '#ecf0f3',
+													transition: 'all 200ms',
+												},
+											}}
+											mb="sm"
+										/>
+										<button
+											onClick={() => {
+												checkLoginCode.mutate({ ...loginCodeForm.values });
+											}}
+											type="submit"
+											className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 px-6 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+										>
+											Login
+										</button>
+									</form>
 								</>
 							)}
+							{isAuthorized && <Logged isMobile={isMobile} />}
 						</div>
 					</div>
 				</section>
-				{!isMobile || !sessionData ? (
+				{!isMobile || !isAuthorized ? (
 					<div className="fixed bottom-5 right-5">
 						<ThemeSwitcher size="h-[32px] w-[64px]" />
 					</div>

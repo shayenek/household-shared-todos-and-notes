@@ -34,6 +34,7 @@
     "@trpc/server": "^10.26.0",
     "cookies-next": "^2.1.1",
     "dayjs": "^1.11.7",
+    "js-cookie": "^3.0.5",
     "next": "^13.4.2",
     "next-auth": "^4.22.1",
     "pusher": "^5.1.3",

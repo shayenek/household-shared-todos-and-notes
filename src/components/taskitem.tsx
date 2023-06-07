@@ -1,5 +1,6 @@
 import { Loader } from '@mantine/core';
 import { type Task } from '@prisma/client';
+import { useSession } from 'next-auth/react';
 import React, { useState, type ReactNode } from 'react';
 
 const isDarkColor = (color: string) => {
@@ -114,6 +115,7 @@ const TaskElement = ({
 	activatedHashFilter: string;
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+	const { data: sessionData } = useSession();
 
 	const startDate = task.startDate;
 	const endDate = task.endDate;
@@ -193,15 +195,17 @@ const TaskElement = ({
 						</button>
 					</>
 				)}
-				<button
-					onClick={deleteAction}
-					className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
-						deletionInProgress ? 'opacity-50' : 'opacity-100'
-					}`}
-					disabled={deletionInProgress || isBeingDeleted}
-				>
-					Delete
-				</button>
+				{sessionData && (
+					<button
+						onClick={deleteAction}
+						className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
+							deletionInProgress ? 'opacity-50' : 'opacity-100'
+						}`}
+						disabled={deletionInProgress || isBeingDeleted}
+					>
+						Delete
+					</button>
+				)}
 			</div>
 			{isBeingDeleted && (
 				<div className="absolute bottom-0 left-0 right-0 top-0 flex items-center justify-center bg-[#000000ab]">

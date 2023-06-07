@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/api/trpc';
+import { prisma } from '~/server/db';
 import { pusherServerClient } from '~/server/pusher';
 
 const wordToRgbColor: (word: string) => string = (word) => {
@@ -111,8 +112,8 @@ export const tasksRouter = createTRPCRouter({
 
 			return deleteTask;
 		}),
-	getAllTasks: protectedProcedure.query(({ ctx }) => {
-		return ctx.prisma.task.findMany({
+	getAllTasks: publicProcedure.query(() => {
+		return prisma.task.findMany({
 			orderBy: {
 				createdAt: 'desc',
 			},

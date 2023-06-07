@@ -83,3 +83,16 @@ model Task {
   endDate     DateTime?
   endTime     String? @default("00:00")
 }
+
+model Code {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  code      String
+}
+
+model Codesession {
+  id        String   @id @default(cuid())
+  sessionToken String   @unique
+  expires     DateTime
+}

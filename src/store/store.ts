@@ -24,3 +24,13 @@ export const useTaskAuthorStore = create<TaskAuthorState>()((set) => ({
 	taskAuthor: 'all',
 	setTaskAuthor: (taskAuthor: 'all' | 'mine') => set({ taskAuthor }),
 }));
+
+export interface AuthorizedUserState {
+	isAuthorized: boolean;
+	setIsAuthorized: (isAuthorized: boolean) => void;
+}
+
+export const useAuthorizedUserStore = create<AuthorizedUserState>()((set) => ({
+	isAuthorized: false,
+	setIsAuthorized: (isAuthorized) => set({ isAuthorized }),
+}));

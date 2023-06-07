@@ -12,6 +12,9 @@ export default {
 			boxShadow: {
 				main: '0 0 12px 0 rgba(0, 0, 0, 0.13)',
 			},
+			minHeight: {
+				dynamicScreen: '100dvh',
+			},
 		},
 	},
 	plugins: [],

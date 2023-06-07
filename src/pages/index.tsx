@@ -126,7 +126,7 @@ const Home: NextPage = () => {
 			</Head>
 			<main className={globalTheme}>
 				<section
-					className={`flex min-h-screen flex-col items-center bg-[#f4f6f8] transition duration-200 dark:bg-[#101213] ${
+					className={`flex min-h-dynamicScreen flex-col items-center bg-[#f4f6f8] transition duration-200 dark:bg-[#101213] md:min-h-screen ${
 						!isAuthorized ? 'items-center justify-center' : ''
 					}`}
 				>

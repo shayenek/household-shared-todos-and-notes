@@ -148,7 +148,9 @@ const Home: NextPage = () => {
 								<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
 									Hello!
 								</h1>
-								<h2 className="text-center">Have a good day!</h2>
+								<h2 className="text-center text-black dark:text-white">
+									Have a good day!
+								</h2>
 							</div>
 						)}
 						<div className="flex w-full flex-col items-center gap-2 md:mt-8">

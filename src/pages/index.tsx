@@ -125,7 +125,11 @@ const Home: NextPage = () => {
 				<link rel="icon" href="/favicon.ico" />
 			</Head>
 			<main className={globalTheme}>
-				<section className="flex min-h-screen flex-col items-center bg-[#f4f6f8] transition duration-200 dark:bg-[#101213] ">
+				<section
+					className={`flex min-h-screen flex-col items-center bg-[#f4f6f8] transition duration-200 dark:bg-[#101213] ${
+						!isAuthorized ? 'items-center justify-center' : ''
+					}`}
+				>
 					{isAuthorized && (
 						<button
 							className="mt-4 hidden rounded-full bg-red-500 px-10 py-3 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4 md:block"
@@ -140,9 +144,12 @@ const Home: NextPage = () => {
 						}`}
 					>
 						{!isAuthorized && (
-							<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
-								Log In
-							</h1>
+							<div>
+								<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
+									Hello!
+								</h1>
+								<h2>Have a good day!</h2>
+							</div>
 						)}
 						<div className="flex w-full flex-col items-center gap-2 md:mt-8">
 							{!isAuthorized && (

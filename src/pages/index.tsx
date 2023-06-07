@@ -9,7 +9,12 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import ThemeSwitcher from '~/components/switchtheme';
-import { useAuthorizedUserStore, type ThemeState, useThemeStore } from '~/store/store';
+import {
+	type AuthorizedUserState,
+	useAuthorizedUserStore,
+	type ThemeState,
+	useThemeStore,
+} from '~/store/store';
 import { api } from '~/utils/api';
 
 import Logged from './logged';
@@ -18,9 +23,8 @@ const Home: NextPage = () => {
 	const { data: sessionData } = useSession();
 
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+	const isAuthorized = useAuthorizedUserStore((state: AuthorizedUserState) => state.isAuthorized);
 	const [globalTheme, setGlobalTheme] = useState<'dark' | 'light'>('light');
-
-	const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
 
 	const { data: userData } = api.users.getUserData.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
@@ -30,7 +34,6 @@ const Home: NextPage = () => {
 
 	const checkSessionToken = api.login.checkSession.useMutation({
 		onSuccess: () => {
-			setIsAuthorized(true);
 			useAuthorizedUserStore.setState({ isAuthorized: true });
 		},
 	});
@@ -41,7 +44,8 @@ const Home: NextPage = () => {
 		if (sessionToken) {
 			checkSessionToken.mutate({ sessionToken: sessionToken });
 		}
-	}, [checkSessionToken]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	useEffect(() => {
 		const handleWindowSizeChange = () => {
@@ -82,7 +86,6 @@ const Home: NextPage = () => {
 					maxAge: 30 * 24 * 60 * 60,
 					path: '/',
 				});
-				setIsAuthorized(true);
 				useAuthorizedUserStore.setState({ isAuthorized: true });
 			}
 			loginCodeForm.reset();
@@ -93,7 +96,6 @@ const Home: NextPage = () => {
 		if (sessionData) {
 			if (userData) {
 				if (userData.type === 'admin') {
-					setIsAuthorized(true);
 					useAuthorizedUserStore.setState({ isAuthorized: true });
 				} else {
 					notifications.show({
@@ -105,14 +107,12 @@ const Home: NextPage = () => {
 				}
 			}
 		} else {
-			setIsAuthorized(false);
 			useAuthorizedUserStore.setState({ isAuthorized: false });
 		}
 	}, [sessionData, userData]);
 
 	const handleSignOut = async () => {
 		await signOut();
-		setIsAuthorized(false);
 		useAuthorizedUserStore.setState({ isAuthorized: false });
 		deleteCookie('sessionToken');
 	};
@@ -134,7 +134,11 @@ const Home: NextPage = () => {
 							Sign Out
 						</button>
 					)}
-					<div className="container mb-20 mt-14 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16">
+					<div
+						className={`container mb-20 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16 ${
+							sessionData ? 'mt-14' : ''
+						}`}
+					>
 						{!isAuthorized && (
 							<h1 className="text-5xl font-extrabold tracking-tight text-black dark:text-white sm:text-[5rem]">
 								Log In

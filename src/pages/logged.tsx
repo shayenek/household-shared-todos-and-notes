@@ -39,7 +39,7 @@ const Logged = ({ isMobile }: { isMobile: boolean }) => {
 			{!isMobile && sessionData && <TaskForm />}
 
 			<Tasks isMobile={isMobile} />
-			{isMobile && <TopNavbar />}
+			{isMobile && sessionData && <TopNavbar />}
 			{isMobile && <MobileNavbar addNewButton={open} />}
 		</div>
 	);

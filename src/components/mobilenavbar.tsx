@@ -1,23 +1,42 @@
 import { IconPlus } from '@tabler/icons-react';
-import { signOut } from 'next-auth/react';
+import { deleteCookie } from 'cookies-next';
+import { signOut, useSession } from 'next-auth/react';
+
+import { useAuthorizedUserStore } from '~/store/store';
 
 import ThemeSwitcher from './switchtheme';
 
 const MobileNavbar = ({ addNewButton }: { addNewButton: () => void }) => {
+	const { data: sessionData } = useSession();
+
+	const handleSignOut = async () => {
+		await signOut();
+		useAuthorizedUserStore.setState({ isAuthorized: false });
+		deleteCookie('sessionToken');
+	};
+
 	return (
-		<div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-white p-4 shadow-main transition duration-200 dark:bg-[#1d1f20] md:hidden ">
-			<button
-				onClick={addNewButton}
-				className="flex h-12 w-full items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white "
-			>
-				<IconPlus size="1.5rem" />
-			</button>
+		<div
+			className={`fixed z-50 flex items-center justify-center gap-1 p-4 transition duration-200 md:hidden ${
+				sessionData
+					? 'bottom-0 left-0 right-0 gap-2 bg-white shadow-main dark:bg-[#1d1f20]'
+					: 'bottom-0 right-0'
+			}`}
+		>
+			{sessionData && (
+				<button
+					onClick={addNewButton}
+					className="flex h-12 w-full items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white "
+				>
+					<IconPlus size="1.5rem" />
+				</button>
+			)}
 			<div className="flex h-12 items-center rounded-lg border-2 border-[#eeedf0] bg-white font-semibold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
 				<ThemeSwitcher size="h-[26px] w-[52px]" />
 			</div>
 			<button
 				className="h-12 rounded-lg border-2 bg-red-500 px-3 font-semibold text-white no-underline transition duration-200 dark:border-[#1d1f20]"
-				onClick={() => void signOut()}
+				onClick={() => void handleSignOut()}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

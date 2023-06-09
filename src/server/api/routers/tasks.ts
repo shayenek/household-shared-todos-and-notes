@@ -59,7 +59,7 @@ export const tasksRouter = createTRPCRouter({
 
 			const taskItem = await ctx.prisma.task.create({
 				data: {
-					title: newTitle,
+					title: newTitle || title,
 					description,
 					author: { connect: { id: ctx.session.user.id } },
 					type,

@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 import { Loader } from '@mantine/core';
 import { type Task } from '@prisma/client';
+import { IconLink } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
-import React, { useState, type ReactNode } from 'react';
+import React, { useState, type ReactNode, useEffect } from 'react';
 
 const isDarkColor = (color: string) => {
 	color = color.replace(/\s/g, '').toLowerCase();
@@ -116,11 +118,77 @@ const TaskElement = ({
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 	const { data: sessionData } = useSession();
+	const [taskDescription, setTaskDescription] = useState<string | ReactNode>('');
 
 	const startDate = task.startDate;
 	const endDate = task.endDate;
 	const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : '';
 	const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : '';
+
+	useEffect(() => {
+		if (
+			task.description &&
+			(task.description.includes('https://') || task.description.includes('http://'))
+		) {
+			const descriptionArray = task.description.replace(/http/gi, ',http');
+			const newDesciprion = descriptionArray.split(',').map((word) => {
+				if (word.includes('https://') || word.includes('http://')) {
+					return (
+						<a
+							href={word}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-block text-blue-500 hover:underline"
+							key={word}
+						>
+							<IconLink size={18} className="mr-1 inline" />
+							<img
+								src={`https://s2.googleusercontent.com/s2/favicons?domain=${word}`}
+								alt={word}
+								className="mr-1 inline rounded-sm"
+							/>
+							{word
+								.replace('https://', '')
+								.replace('http://', '')
+								.replace('www.', '')}
+						</a>
+					);
+				} else {
+					return word;
+				}
+			});
+			setTaskDescription(newDesciprion);
+		} else {
+			setTaskDescription(task.description);
+		}
+		// if (
+		// 	task.description &&
+		// 	(task.description.includes('https://') || task.description.includes('http://'))
+		// ) {
+		// 	const descriptionArray = task.description.split(' ');
+		// 	const descriptionWithLinks = descriptionArray.map((word) => {
+		// 		if (word.includes('https://') || word.includes('http://')) {
+		// 			return (
+		// 				<a
+		// 					href={word}
+		// 					target="_blank"
+		// 					rel="noopener noreferrer"
+		// 					className="inline-block text-blue-500 hover:underline"
+		// 					key={word}
+		// 				>
+		// 					<IconLink size={18} className="mr-1 inline" />
+		// 					{word}
+		// 				</a>
+		// 			);
+		// 		} else {
+		// 			return word;
+		// 		}
+		// 	});
+		// 	setTaskDescription(descriptionWithLinks);
+		// } else {
+		// 	setTaskDescription(task.description);
+		// }
+	}, [task.description]);
 
 	const handleTouchStart = () => {
 		setTimer(setTimeout(onLongPress, 500)); // Adjust the duration as needed
@@ -170,10 +238,10 @@ const TaskElement = ({
 			)}
 
 			<p
-				className="mr-20 block text-sm text-[#7c7e82] dark:text-[#5f6163] md:text-base"
+				className="block text-sm text-[#7c7e82] dark:text-[#5f6163] md:text-base"
 				style={{ whiteSpace: 'pre-line' }}
 			>
-				{task.description}
+				{taskDescription}
 			</p>
 
 			{task.description && (

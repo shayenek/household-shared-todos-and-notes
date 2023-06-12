@@ -168,6 +168,32 @@ export const tasksRouter = createTRPCRouter({
 			},
 		});
 	}),
+	getInfiniteTasks: protectedProcedure
+		.input(
+			z.object({
+				limit: z.number().min(1).max(100).default(20),
+				cursor: z.string().optional(),
+			})
+		)
+		.query(async ({ input }) => {
+			const { limit, cursor } = input;
+			const items = await prisma.task.findMany({
+				take: limit + 1,
+				orderBy: {
+					createdAt: 'desc',
+				},
+				cursor: cursor ? { id: cursor } : undefined,
+			});
+			let nextCursor: typeof cursor | undefined = undefined;
+			if (items.length > limit) {
+				const nextItem = items.pop() as (typeof items)[number];
+				nextCursor = nextItem?.id;
+			}
+			return {
+				items,
+				nextCursor,
+			};
+		}),
 	getTasksForUser: protectedProcedure.query(({ ctx }) => {
 		if (!ctx.session?.user?.id) {
 			throw new Error('No user found');

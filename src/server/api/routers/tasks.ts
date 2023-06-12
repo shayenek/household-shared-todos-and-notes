@@ -93,6 +93,55 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 		}),
+	updateTask: protectedProcedure
+		.input(
+			z.object({
+				id: z.string(),
+				title: z.string(),
+				description: z.string(),
+				type: z.string(),
+				startDate: z.date(),
+				startTime: z.string(),
+				endDate: z.date(),
+				endTime: z.string(),
+			})
+		)
+		.mutation(({ input, ctx }) => {
+			const { id, title, description, type, startDate, startTime, endDate, endTime } = input;
+
+			let newTitle = '';
+			if (title.includes('#')) {
+				const taskTitleArray = title.split('#');
+				const firstPart = taskTitleArray[0]?.trim();
+				const hashtags = taskTitleArray.slice(1);
+
+				const modifiedHashtags = hashtags.map((hashtag) => {
+					const trimmedHashtag = hashtag.trim();
+					return '#' + trimmedHashtag + '-[' + wordToRgbColor(trimmedHashtag) + ']';
+				});
+
+				if (firstPart) {
+					newTitle = firstPart + ' ' + modifiedHashtags.join(' ');
+				} else {
+					newTitle = modifiedHashtags.join(' ');
+				}
+			}
+
+			return ctx.prisma.task.update({
+				where: {
+					id,
+				},
+				data: {
+					title: newTitle || title,
+					description,
+					type,
+					startDate,
+					startTime,
+					endDate,
+					endTime,
+				},
+			});
+		}),
 	deleteTask: protectedProcedure
 		.input(
 			z.object({

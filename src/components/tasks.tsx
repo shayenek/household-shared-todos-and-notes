@@ -1,19 +1,35 @@
+import { Modal } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
+import { type Task } from '@prisma/client';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 
 import TaskElement from '~/components/taskitem';
-import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
+import {
+	type TaskAuthorState,
+	useTaskAuthorStore,
+	useThemeStore,
+	type ThemeState,
+} from '~/store/store';
 import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
+
+import TaskForm from './taskform';
 
 const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const { data: sessionData } = useSession();
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
+	const [editModalTask, setEditModalTask] = useState<Task | undefined>(undefined);
+
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
+
+	const [editModalOpened, { open, close }] = useDisclosure(false);
 
 	const { data: allTasksData, refetch } = api.tasks.getAllTasks.useQuery();
 
@@ -70,6 +86,11 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		confirmDeletionModal(taskId);
 	};
 
+	const handleUpdateTask = (task: Task) => {
+		setEditModalTask(task);
+		open();
+	};
+
 	let filteredTasks =
 		taskAuthor === 'mine'
 			? allTasksData?.filter((task) => task.authorId === sessionData?.user?.id)
@@ -123,7 +144,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 				{!isMobile && sessionData && (
 					<>
 						<button
-							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
 								taskAuthor === 'all' ? '!bg-blue-500 text-white' : ''
 							}`}
 							onClick={() => setTaskAuthor('all')}
@@ -131,7 +152,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 							All
 						</button>
 						<button
-							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+							className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
 								taskAuthor === 'mine' ? '!bg-blue-500 text-white' : ''
 							}`}
 							onClick={() => setTaskAuthor('mine')}
@@ -146,10 +167,13 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 					<TaskElement
 						key={task.id}
 						task={task}
+						updateElement={() => {
+							handleUpdateTask(task);
+						}}
 						deleteAction={() => {
 							handleDeleteTask(task.id);
 						}}
-						updateAction={() => {
+						updateTaskStatus={() => {
 							updateTaskStatus.mutate({ id: task.id, completed: !task.completed });
 							void refetch();
 						}}
@@ -160,6 +184,26 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 					/>
 				))}
 			</div>
+			<Modal
+				opened={editModalOpened}
+				onClose={close}
+				title="Edit task"
+				centered
+				styles={{
+					content: {
+						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
+						borderWidth: '2px',
+						borderColor: currentTheme === 'dark' ? '#2b3031' : '#ecf0f3',
+					},
+					header: {
+						color: currentTheme === 'dark' ? '#fff' : '#030910',
+						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
+					},
+				}}
+				className={currentTheme}
+			>
+				<TaskForm onSubmit={close} task={editModalTask} />
+			</Modal>
 		</div>
 	);
 };

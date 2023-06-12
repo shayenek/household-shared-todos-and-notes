@@ -5,40 +5,7 @@ import { IconLink } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
 import React, { useState, type ReactNode, useEffect } from 'react';
 
-const isDarkColor = (color: string) => {
-	color = color.replace(/\s/g, '').toLowerCase();
-
-	if (color.startsWith('rgb(') && color.endsWith(')')) {
-		const rgbValues = color.substring(4, color.length - 1).split(',');
-
-		let r,
-			g,
-			b = 0;
-
-		if (typeof rgbValues[0] !== 'undefined') {
-			r = parseInt(rgbValues[0]);
-		}
-		if (typeof rgbValues[1] !== 'undefined') {
-			g = parseInt(rgbValues[1]);
-		}
-		if (typeof rgbValues[2] !== 'undefined') {
-			b = parseInt(rgbValues[2]);
-		}
-
-		let luminance = 0;
-		if (typeof r !== 'undefined' && typeof g !== 'undefined' && typeof b !== 'undefined') {
-			luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-		}
-
-		if (luminance <= 0.5) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	return false;
-};
+import isDarkColor from '~/utils/isDarkColor';
 
 const TaskHeader: (
 	taskTitle: string,
@@ -99,18 +66,52 @@ const TaskHeader: (
 	}
 };
 
+const TaskDescription: (taskDescription: string) => ReactNode = (taskDescription) => {
+	if (taskDescription.includes('https://') || taskDescription.includes('http://')) {
+		const descriptionArray = taskDescription.split(/(https?:\/\/\S+)/gi);
+		const newDescription = descriptionArray.map((word) => {
+			if (word.includes('https://') || word.includes('http://')) {
+				return (
+					<a
+						href={word}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-block text-blue-500 hover:underline"
+						key={word}
+					>
+						<IconLink size={18} className="mr-1 inline" />
+						<img
+							src={`https://s2.googleusercontent.com/s2/favicons?domain=${word}`}
+							alt={word}
+							className="mr-1 inline rounded-sm"
+						/>
+						{word.replace('https://', '').replace('http://', '').replace('www.', '')}
+					</a>
+				);
+			} else {
+				return word;
+			}
+		});
+		return <span>{newDescription}</span>;
+	} else {
+		return <span>{taskDescription}</span>;
+	}
+};
+
 const TaskElement = ({
 	task,
+	updateElement,
 	deleteAction,
-	updateAction,
+	updateTaskStatus,
 	isBeingDeleted,
 	deletionInProgress,
 	handleHashButtonClick,
 	activatedHashFilter,
 }: {
 	task: Task;
+	updateElement: () => void;
 	deleteAction: () => void;
-	updateAction: () => void;
+	updateTaskStatus: () => void;
 	isBeingDeleted: boolean;
 	deletionInProgress: boolean;
 	handleHashButtonClick: (buttonText: string) => void;
@@ -118,80 +119,15 @@ const TaskElement = ({
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 	const { data: sessionData } = useSession();
-	const [taskDescription, setTaskDescription] = useState<string | ReactNode>('');
+	// const [taskDescription, setTaskDescription] = useState<string | ReactNode>('');
 
 	const startDate = task.startDate;
 	const endDate = task.endDate;
 	const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : '';
 	const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : '';
 
-	useEffect(() => {
-		if (
-			task.description &&
-			(task.description.includes('https://') || task.description.includes('http://'))
-		) {
-			const descriptionArray = task.description.replace(/http/gi, ',http');
-			const newDesciprion = descriptionArray.split(',').map((word) => {
-				if (word.includes('https://') || word.includes('http://')) {
-					return (
-						<a
-							href={word}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-block text-blue-500 hover:underline"
-							key={word}
-						>
-							<IconLink size={18} className="mr-1 inline" />
-							<img
-								src={`https://s2.googleusercontent.com/s2/favicons?domain=${word}`}
-								alt={word}
-								className="mr-1 inline rounded-sm"
-							/>
-							{word
-								.replace('https://', '')
-								.replace('http://', '')
-								.replace('www.', '')}
-						</a>
-					);
-				} else {
-					return word;
-				}
-			});
-			setTaskDescription(newDesciprion);
-		} else {
-			setTaskDescription(task.description);
-		}
-		// if (
-		// 	task.description &&
-		// 	(task.description.includes('https://') || task.description.includes('http://'))
-		// ) {
-		// 	const descriptionArray = task.description.split(' ');
-		// 	const descriptionWithLinks = descriptionArray.map((word) => {
-		// 		if (word.includes('https://') || word.includes('http://')) {
-		// 			return (
-		// 				<a
-		// 					href={word}
-		// 					target="_blank"
-		// 					rel="noopener noreferrer"
-		// 					className="inline-block text-blue-500 hover:underline"
-		// 					key={word}
-		// 				>
-		// 					<IconLink size={18} className="mr-1 inline" />
-		// 					{word}
-		// 				</a>
-		// 			);
-		// 		} else {
-		// 			return word;
-		// 		}
-		// 	});
-		// 	setTaskDescription(descriptionWithLinks);
-		// } else {
-		// 	setTaskDescription(task.description);
-		// }
-	}, [task.description]);
-
 	const handleTouchStart = () => {
-		setTimer(setTimeout(onLongPress, 500)); // Adjust the duration as needed
+		setTimer(setTimeout(onLongPress, 500));
 	};
 
 	const onLongPress = () => {
@@ -238,10 +174,10 @@ const TaskElement = ({
 			)}
 
 			<p
-				className="block text-sm text-[#7c7e82] dark:text-[#5f6163] md:text-base"
+				className="block text-sm text-[#7c7e82] dark:text-[#7e8083] md:text-base"
 				style={{ whiteSpace: 'pre-line' }}
 			>
-				{taskDescription}
+				{task.description && TaskDescription(task.description)}
 			</p>
 
 			{task.description && (
@@ -257,22 +193,33 @@ const TaskElement = ({
 									? 'bg-orange-500 hover:bg-orange-600'
 									: 'bg-green-600 hover:bg-green-800'
 							}`}
-							onClick={updateAction}
+							onClick={updateTaskStatus}
 						>
 							{task.completed ? 'Undone' : 'Done'}
 						</button>
 					</>
 				)}
 				{sessionData && (
-					<button
-						onClick={deleteAction}
-						className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
-							deletionInProgress ? 'opacity-50' : 'opacity-100'
-						}`}
-						disabled={deletionInProgress || isBeingDeleted}
-					>
-						Delete
-					</button>
+					<>
+						<button
+							onClick={updateElement}
+							className={`w-20 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800 ${
+								deletionInProgress ? 'opacity-50' : 'opacity-100'
+							}`}
+							disabled={deletionInProgress || isBeingDeleted}
+						>
+							Edit
+						</button>
+						<button
+							onClick={deleteAction}
+							className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
+								deletionInProgress ? 'opacity-50' : 'opacity-100'
+							}`}
+							disabled={deletionInProgress || isBeingDeleted}
+						>
+							Delete
+						</button>
+					</>
 				)}
 			</div>
 			{isBeingDeleted && (

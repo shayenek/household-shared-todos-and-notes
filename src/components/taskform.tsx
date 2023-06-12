@@ -1,26 +1,37 @@
 import { TextInput, Group, Textarea, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { type Task } from '@prisma/client';
 import { IconCalendar } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
 
-const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () => void }) => {
+const TaskForm = ({
+	className,
+	onSubmit,
+	task,
+}: {
+	className?: string;
+	onSubmit?: () => void;
+	task?: Task;
+}) => {
 	const { data: sessionData } = useSession();
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 
-	const { refetch } = api.tasks.getTasksForUser.useQuery(undefined, {
+	const { refetch } = api.tasks.getAllTasks.useQuery(undefined, {
 		enabled: sessionData?.user !== undefined,
 	});
 
 	const addTaskForm = useForm({
 		initialValues: {
-			title: '',
-			description: '',
+			id: task?.id ?? '',
+			title: task?.title.replace(/-\[rgb\(\d+,\d+,\d+\)\]/g, '') ?? '',
+			description: task?.description ?? '',
+			type: task?.type ?? '',
 			startDate: new Date(),
 			startTime: '',
 			endDate: new Date(),
@@ -29,6 +40,14 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 	});
 
 	const addTask = api.tasks.createTask.useMutation({
+		onSuccess: () => {
+			addTaskForm.reset();
+			onSubmit?.();
+			void refetch();
+		},
+	});
+
+	const updateTask = api.tasks.updateTask.useMutation({
 		onSuccess: () => {
 			addTaskForm.reset();
 			onSubmit?.();
@@ -58,11 +77,17 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 		return times;
 	};
 
+	useEffect(() => {
+		if (task) {
+			setFormType(task.type as 'note' | 'task');
+		}
+	}, [task]);
+
 	return (
 		<div
-			className={`w-full rounded-lg bg-white p-4 transition duration-200 dark:bg-[#1d1f20] md:max-w-[20rem] md:self-start lg:min-w-[20rem] ${
+			className={`top-5 w-full rounded-lg bg-white transition duration-200 dark:bg-[#1d1f20] md:sticky md:self-start md:p-4 lg:min-w-[20rem] ${
 				className ?? ''
-			}`}
+			} ${!task ? 'md:max-w-[20rem]' : ''}`}
 		>
 			<div className="flex justify-center gap-2">
 				<button
@@ -254,12 +279,16 @@ const TaskForm = ({ className, onSubmit }: { className?: string; onSubmit?: () =
 				<Group position="center" mt="md">
 					<button
 						onClick={() => {
+							if (task) {
+								updateTask.mutate({ ...addTaskForm.values, id: task.id });
+								return;
+							}
 							addTask.mutate({ ...addTaskForm.values, type: formType });
 						}}
 						type="submit"
-						className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white"
+						className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white"
 					>
-						Add {formType === 'task' ? 'task' : 'note'}
+						{!task ? 'Add' : 'Update'} {formType === 'task' ? 'task' : 'note'}
 					</button>
 				</Group>
 			</form>

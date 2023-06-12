@@ -82,7 +82,9 @@ model Task {
   startTime   String? @default("00:00")
   endDate     DateTime?
   endTime     String? @default("00:00")
+  position    Int
 }
+
 
 model Code {
   id        String   @id @default(cuid())

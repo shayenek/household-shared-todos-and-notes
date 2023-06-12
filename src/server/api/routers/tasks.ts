@@ -57,6 +57,17 @@ export const tasksRouter = createTRPCRouter({
 				}
 			}
 
+			const lastTask = await ctx.prisma.task.findFirst({
+				orderBy: {
+					position: 'desc',
+				},
+				select: {
+					position: true,
+				},
+			});
+
+			const newPosition = (lastTask?.position || 0) + 1024;
+
 			const taskItem = await ctx.prisma.task.create({
 				data: {
 					title: newTitle || title,
@@ -67,6 +78,7 @@ export const tasksRouter = createTRPCRouter({
 					startTime,
 					endDate,
 					endTime,
+					position: newPosition,
 				},
 			});
 
@@ -142,6 +154,29 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 		}),
+	updateTaskPosition: protectedProcedure
+		.input(
+			z.object({
+				id: z.string(),
+				position: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id, position } = input;
+
+			const taskPositionUpdated = await ctx.prisma.task.update({
+				where: {
+					id,
+				},
+				data: {
+					position,
+				},
+			});
+
+			await pusherServerClient.trigger(`user-shayenek`, 'tasks-repositioned', {});
+
+			return taskPositionUpdated;
+		}),
 	deleteTask: protectedProcedure
 		.input(
 			z.object({
@@ -180,7 +215,7 @@ export const tasksRouter = createTRPCRouter({
 			const items = await prisma.task.findMany({
 				take: limit + 1,
 				orderBy: {
-					createdAt: 'desc',
+					position: 'desc',
 				},
 				cursor: cursor ? { id: cursor } : undefined,
 			});

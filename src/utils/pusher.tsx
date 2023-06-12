@@ -111,14 +111,12 @@ export function useSubscribeToEvent<MessageType>(
 		};
 		if (eventName.includes(',')) {
 			eventName
-				.replace(' ', '')
+				.replace(/ /g, '')
 				.split(',')
 				.forEach((event) => {
-					console.log('multiple events bind');
 					channel.bind(event, reference);
 				});
 		} else {
-			console.log('single event bind');
 			channel.bind(eventName, reference);
 		}
 

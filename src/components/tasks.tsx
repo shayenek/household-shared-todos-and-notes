@@ -4,6 +4,7 @@ import { modals } from '@mantine/modals';
 import { type Task } from '@prisma/client';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import TaskElement from '~/components/taskitem';
 import {
@@ -17,6 +18,9 @@ import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 
 import TaskForm from './taskform';
+
+const TASKS_LIMIT_PER_PAGE = 5;
+const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
 
 const useScrollPosition = () => {
 	const [scrollPosition, setScrollPosition] = useState<number>(0);
@@ -44,6 +48,11 @@ const useScrollPosition = () => {
 
 const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const { data: sessionData } = useSession();
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
+	const [editModalOpened, { open, close }] = useDisclosure(false);
+
+	const [taskData, setTaskData] = useState<Task[]>([]);
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
@@ -51,11 +60,10 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [page, setPage] = useState(0);
 
-	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
-
-	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
-
-	const [editModalOpened, { open, close }] = useDisclosure(false);
+	const scrollPosition = useScrollPosition();
+	const setTaskAuthor = (author: TaskAuthorType) => {
+		useTaskAuthorStore.setState({ taskAuthor: author });
+	};
 
 	const {
 		data: allTasksData,
@@ -64,7 +72,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		isFetching,
 		refetch,
 	} = api.tasks.getInfiniteTasks.useInfiniteQuery(
-		{ limit: 4 },
+		{ limit: TASKS_LIMIT_PER_PAGE },
 		{
 			getNextPageParam: (lastPage) => lastPage.nextCursor,
 		}
@@ -84,6 +92,12 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		onError: (error, data) => {
 			setIsBeingDeleted(data.id);
 			console.log(error);
+		},
+	});
+
+	const updateTaskPosition = api.tasks.updateTaskPosition.useMutation({
+		onSuccess: () => {
+			void refetch();
 		},
 	});
 
@@ -128,13 +142,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		open();
 	};
 
-	let filteredTasks =
-		taskAuthor === 'mine'
-			? allTasksData?.pages
-					.flatMap((page) => page.items)
-					.filter((task) => task.authorId === sessionData?.user?.id)
-			: allTasksData?.pages.flatMap((page) => page.items);
-
 	const filterByHash = (buttonText: string) => {
 		const cleanedButtonText = buttonText.replace('#', '').replace(' ', '');
 		const cleanedHashWord = hashWord ? hashWord.replace('#', '').replace(' ', '') : null;
@@ -147,13 +154,61 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		setHashWord(cleanedButtonText);
 	};
 
-	if (hashWord) {
-		filteredTasks = filteredTasks?.filter((task) => {
+	const onDragEndHandler = (result: DropResult) => {
+		const { destination, source, draggableId } = result;
+
+		if (!destination) {
+			return;
+		}
+
+		if (destination.droppableId === source.droppableId && destination.index === source.index) {
+			return;
+		}
+
+		const task = taskData?.find((task) => task.position.toString() === draggableId);
+
+		if (!task) {
+			return;
+		}
+
+		if (!taskData) return;
+
+		const newTaskData = [...taskData];
+		newTaskData.splice(source.index, 1);
+		newTaskData.splice(destination.index, 0, task);
+
+		setTaskData(newTaskData);
+
+		const previousItemPosition = taskData[destination.index - 1]?.position;
+		const nextItemPosition = taskData[destination.index]?.position;
+
+		let newPosition = 0;
+
+		if (!previousItemPosition || !nextItemPosition) return;
+		if (destination.index === 0) {
+			newPosition = previousItemPosition + 1024;
+		} else if (destination.index === taskData.length - 1) {
+			newPosition = nextItemPosition - 1024;
+		} else {
+			newPosition = (previousItemPosition + nextItemPosition) / 2;
+		}
+
+		if (newPosition !== task.position) {
+			updateTaskPosition.mutate({ id: task.id, position: newPosition });
+		}
+
+		console.log(previousItemPosition, nextItemPosition, newPosition);
+	};
+
+	const sortByHash = (data: Task[], hash: string | null) => {
+		if (!hash) return data;
+
+		const newData = data?.filter((task) => {
 			const words = task.title.split(' ');
 			const filteredWords = words.filter((word) => {
 				if (word.includes('#')) {
 					const cleanedWord = word.replace('#', '').replace(' ', '').split('-')[0];
-					const cleanedHash = hashWord.replace(' ', '').replace('#', '');
+					const cleanedHash = hash.replace(' ', '').replace('#', '');
 					if (cleanedWord === cleanedHash) {
 						return true;
 					}
@@ -162,26 +217,38 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 			});
 			return filteredWords.length > 0;
 		});
-	}
 
-	useSubscribeToEvent('new-task, delete-task', () => {
+		return newData;
+	};
+
+	useEffect(() => {
+		if (allTasksData) {
+			let newTaskData = allTasksData?.pages.flatMap((page) => page.items);
+
+			if (taskAuthor === 'mine') {
+				newTaskData = newTaskData.filter((task) => task.authorId === sessionData?.user?.id);
+			}
+
+			if (hashWord) {
+				newTaskData = sortByHash(newTaskData, hashWord);
+			}
+
+			setTaskData(newTaskData);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [allTasksData, taskAuthor, hashWord]);
+
+	useSubscribeToEvent('new-task, delete-task, tasks-repositioned', () => {
 		console.log('event received');
 		void refetch();
 	});
 
-	const setTaskAuthor = (author: TaskAuthorType) => {
-		useTaskAuthorStore.setState({ taskAuthor: author });
-	};
-
-	const ScrollPosition = useScrollPosition();
-
 	useEffect(() => {
-		if (ScrollPosition > 90 && hasNextPage && !isFetching) {
-			console.log('test');
+		if (scrollPosition > SCROLL_POSITION_TO_FETCH_NEXT_PAGE && hasNextPage && !isFetching) {
 			void fetchNextPage();
 			setPage((prev) => prev + 1);
 		}
-	}, [ScrollPosition, fetchNextPage, hasNextPage, isFetching]);
+	}, [scrollPosition, fetchNextPage, hasNextPage, isFetching]);
 
 	return (
 		<>
@@ -212,36 +279,65 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 						</>
 					)}
 				</div>
-				<div className="flex flex-col gap-2">
-					{filteredTasks?.map((task) => (
-						<TaskElement
-							key={task.id}
-							task={task}
-							updateElement={() => {
-								handleUpdateTask(task);
-							}}
-							deleteAction={() => {
-								handleDeleteTask(task.id);
-							}}
-							updateTaskStatus={() => {
-								updateTaskStatus.mutate({
-									id: task.id,
-									completed: !task.completed,
-								});
-								void refetch();
-							}}
-							isBeingDeleted={isBeingDeleted === task.id}
-							deletionInProgress={deletionInProgress}
-							handleHashButtonClick={filterByHash}
-							activatedHashFilter={hashWord ? hashWord : ''}
-						/>
-					))}
-					{isFetching && (
-						<div className="flex w-full items-center justify-center py-2">
-							<Loader />
-						</div>
-					)}
-				</div>
+				<DragDropContext onDragEnd={onDragEndHandler}>
+					<Droppable droppableId="droppable">
+						{(droppableProvided) => (
+							<div
+								className={`flex flex-col gap-2`}
+								ref={droppableProvided.innerRef}
+								{...droppableProvided.droppableProps}
+							>
+								{taskData?.map((task, index) => (
+									<Draggable
+										draggableId={task.position.toString()}
+										key={task.id}
+										index={index}
+									>
+										{(draggableProvided, draggableSnapshot) => (
+											<div
+												{...draggableProvided.draggableProps}
+												{...draggableProvided.dragHandleProps}
+												ref={draggableProvided.innerRef}
+											>
+												<TaskElement
+													task={task}
+													updateElement={() => {
+														handleUpdateTask(task);
+													}}
+													deleteAction={() => {
+														handleDeleteTask(task.id);
+													}}
+													updateTaskStatus={() => {
+														updateTaskStatus.mutate({
+															id: task.id,
+															completed: !task.completed,
+														});
+														void refetch();
+													}}
+													isBeingDeleted={isBeingDeleted === task.id}
+													deletionInProgress={deletionInProgress}
+													handleHashButtonClick={filterByHash}
+													activatedHashFilter={hashWord ? hashWord : ''}
+													className={`${
+														draggableSnapshot.isDragging
+															? 'bg-[#e8e8e8] dark:bg-[#292c2d]'
+															: ''
+													}`}
+												/>
+											</div>
+										)}
+									</Draggable>
+								))}
+								{isFetching && (
+									<div className="flex w-full items-center justify-center py-2">
+										<Loader />
+									</div>
+								)}
+								{droppableProvided.placeholder}
+							</div>
+						)}
+					</Droppable>
+				</DragDropContext>
 			</div>
 			<Modal
 				opened={editModalOpened}

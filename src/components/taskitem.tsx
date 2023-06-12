@@ -3,7 +3,7 @@ import { Loader } from '@mantine/core';
 import { type Task } from '@prisma/client';
 import { IconLink } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
-import React, { useState, type ReactNode, useEffect } from 'react';
+import React, { useState, type ReactNode } from 'react';
 
 import isDarkColor from '~/utils/isDarkColor';
 
@@ -107,6 +107,7 @@ const TaskElement = ({
 	deletionInProgress,
 	handleHashButtonClick,
 	activatedHashFilter,
+	className,
 }: {
 	task: Task;
 	updateElement: () => void;
@@ -116,6 +117,7 @@ const TaskElement = ({
 	deletionInProgress: boolean;
 	handleHashButtonClick: (buttonText: string) => void;
 	activatedHashFilter: string;
+	className?: string;
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 	const { data: sessionData } = useSession();
@@ -131,7 +133,7 @@ const TaskElement = ({
 	};
 
 	const onLongPress = () => {
-		alert('long press is triggered');
+		// alert('long press is triggered');
 	};
 
 	const handleTouchEnd = () => {
@@ -143,10 +145,9 @@ const TaskElement = ({
 
 	return (
 		<div
-			key={task.id}
 			className={`relative overflow-hidden rounded-lg p-4 transition duration-200 ease-in-out ${
 				task.completed ? 'bg-green-100' : 'bg-white dark:bg-[#1d1f20]'
-			}`}
+			} ${className || ''}`}
 			onTouchStart={handleTouchStart}
 			onTouchEnd={handleTouchEnd}
 		>

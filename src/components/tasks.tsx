@@ -193,6 +193,10 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 			newPosition = (previousItemPosition + nextItemPosition) / 2;
 		}
 
+		if (newPosition === nextItemPosition) {
+			newPosition = newPosition - 1;
+		}
+
 		if (newPosition !== task.position) {
 			updateTaskPosition.mutate({ id: task.id, position: newPosition });
 		}

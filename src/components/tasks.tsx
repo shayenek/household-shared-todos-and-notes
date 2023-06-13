@@ -165,7 +165,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 			return;
 		}
 
-		const task = taskData?.find((task) => task.position.toString() === draggableId);
+		const task = taskData?.find((task) => task.id === draggableId);
 
 		if (!task) {
 			return;
@@ -179,14 +179,18 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 
 		setTaskData(newTaskData);
 
-		const previousItemPosition = taskData[destination.index - 1]?.position;
-		const nextItemPosition = taskData[destination.index]?.position;
-
+		let previousItemPosition = newTaskData[destination.index - 1]?.position;
+		let nextItemPosition = newTaskData[destination.index + 1]?.position;
 		let newPosition = 0;
 
-		if (!previousItemPosition || !nextItemPosition) return;
+		if (!previousItemPosition && nextItemPosition) {
+			previousItemPosition = nextItemPosition + 1024;
+			nextItemPosition = taskData[destination.index]?.position;
+		}
+
+		if (!nextItemPosition || !previousItemPosition) return;
 		if (destination.index === 0) {
-			newPosition = previousItemPosition + 1024;
+			newPosition = previousItemPosition;
 		} else if (destination.index === taskData.length - 1) {
 			newPosition = nextItemPosition - 1024;
 		} else {
@@ -200,8 +204,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		if (newPosition !== task.position) {
 			updateTaskPosition.mutate({ id: task.id, position: newPosition });
 		}
-
-		console.log(previousItemPosition, nextItemPosition, newPosition);
 	};
 
 	const sortByHash = (data: Task[], hash: string | null) => {
@@ -298,6 +300,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 												{...draggableProvided.draggableProps}
 												{...draggableProvided.dragHandleProps}
 												ref={draggableProvided.innerRef}
+												data-position={task.position}
 											>
 												<TaskElement
 													task={task}

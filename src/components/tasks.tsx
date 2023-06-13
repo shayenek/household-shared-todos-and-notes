@@ -293,7 +293,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 							>
 								{taskData?.map((task, index) => (
 									<Draggable
-										draggableId={task.position.toString()}
+										draggableId={task.id}
 										key={task.id}
 										index={index}
 									>

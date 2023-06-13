@@ -2,17 +2,24 @@ import { IconPlus } from '@tabler/icons-react';
 import { deleteCookie } from 'cookies-next';
 import { signOut, useSession } from 'next-auth/react';
 
-import { useAuthorizedUserStore } from '~/store/store';
+import { type ThemeState, useAuthorizedUserStore, useThemeStore } from '~/store/store';
+import openGlobalModal from '~/utils/modal';
 
 import ThemeSwitcher from './switchtheme';
+import TaskForm from './taskform';
 
-const MobileNavbar = ({ addNewButton }: { addNewButton: () => void }) => {
+const MobileNavbar = () => {
 	const { data: sessionData } = useSession();
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 
 	const handleSignOut = async () => {
 		await signOut();
 		useAuthorizedUserStore.setState({ isAuthorized: false });
 		deleteCookie('sessionToken');
+	};
+
+	const openNewTaskModal = () => {
+		openGlobalModal('addTaskModal', 'Add new item', <TaskForm></TaskForm>, currentTheme);
 	};
 
 	return (
@@ -25,7 +32,7 @@ const MobileNavbar = ({ addNewButton }: { addNewButton: () => void }) => {
 		>
 			{sessionData && (
 				<button
-					onClick={addNewButton}
+					onClick={openNewTaskModal}
 					className="flex h-12 w-full items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white "
 				>
 					<IconPlus size="1.5rem" />

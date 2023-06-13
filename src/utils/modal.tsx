@@ -1,0 +1,32 @@
+import { modals } from '@mantine/modals';
+
+const openGlobalModal = (
+	modalId: string,
+	title: string,
+	children: React.ReactNode,
+	currentTheme: string
+) => {
+	modals.open({
+		modalId: modalId,
+		title: title,
+		className: currentTheme,
+		styles: {
+			title: {
+				lineHeight: '1.75',
+			},
+			content: {
+				background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
+				borderWidth: '2px',
+				borderColor: currentTheme === 'dark' ? '#2b3031' : '#ecf0f3',
+			},
+			header: {
+				color: currentTheme === 'dark' ? '#fff' : '#030910',
+				background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
+			},
+		},
+		centered: true,
+		children: children,
+	});
+};
+
+export default openGlobalModal;

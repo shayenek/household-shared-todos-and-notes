@@ -1,5 +1,4 @@
-import { Loader, Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { Loader } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { type Task } from '@prisma/client';
 import { useSession } from 'next-auth/react';
@@ -7,17 +6,10 @@ import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import TaskElement from '~/components/taskitem';
-import {
-	type TaskAuthorState,
-	useTaskAuthorStore,
-	useThemeStore,
-	type ThemeState,
-} from '~/store/store';
+import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
 import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
-
-import TaskForm from './taskform';
 
 const TASKS_LIMIT_PER_PAGE = 5;
 const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
@@ -48,15 +40,12 @@ const useScrollPosition = () => {
 
 const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const { data: sessionData } = useSession();
-	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
-	const [editModalOpened, { open, close }] = useDisclosure(false);
 
 	const [taskData, setTaskData] = useState<Task[]>([]);
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
-	const [editModalTask, setEditModalTask] = useState<Task | undefined>(undefined);
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [page, setPage] = useState(0);
 
@@ -84,6 +73,12 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		},
 	});
 
+	const updateTaskPosition = api.tasks.updateTaskPosition.useMutation({
+		onSuccess: () => {
+			void refetch();
+		},
+	});
+
 	const deleteTask = api.tasks.deleteTask.useMutation({
 		onSuccess: () => {
 			setDeletionInProgress(false);
@@ -92,12 +87,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		onError: (error, data) => {
 			setIsBeingDeleted(data.id);
 			console.log(error);
-		},
-	});
-
-	const updateTaskPosition = api.tasks.updateTaskPosition.useMutation({
-		onSuccess: () => {
-			void refetch();
 		},
 	});
 
@@ -135,11 +124,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 
 	const handleDeleteTask = (taskId: string) => {
 		confirmDeletionModal(taskId);
-	};
-
-	const handleUpdateTask = (task: Task) => {
-		setEditModalTask(task);
-		open();
 	};
 
 	const filterByHash = (buttonText: string) => {
@@ -244,7 +228,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [allTasksData, taskAuthor, hashWord]);
 
-	useSubscribeToEvent('new-task, delete-task, tasks-repositioned', () => {
+	useSubscribeToEvent(() => {
 		console.log('event received');
 		void refetch();
 	});
@@ -304,9 +288,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 											>
 												<TaskElement
 													task={task}
-													updateElement={() => {
-														handleUpdateTask(task);
-													}}
 													deleteAction={() => {
 														handleDeleteTask(task.id);
 													}}
@@ -342,26 +323,6 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 					</Droppable>
 				</DragDropContext>
 			</div>
-			<Modal
-				opened={editModalOpened}
-				onClose={close}
-				title="Edit task"
-				centered
-				styles={{
-					content: {
-						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
-						borderWidth: '2px',
-						borderColor: currentTheme === 'dark' ? '#2b3031' : '#ecf0f3',
-					},
-					header: {
-						color: currentTheme === 'dark' ? '#fff' : '#030910',
-						background: currentTheme === 'dark' ? '#1d1f20' : '#fff',
-					},
-				}}
-				className={currentTheme}
-			>
-				<TaskForm onSubmit={close} task={editModalTask} />
-			</Modal>
 		</>
 	);
 };

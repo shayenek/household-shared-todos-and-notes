@@ -92,15 +92,11 @@ function usePusherStore<T>(
 	return useStore(store, selector, equalityFn);
 }
 
-export function useSubscribeToEvent<MessageType>(
-	eventName: string,
-	callback: (data: MessageType) => void
-) {
+export function useSubscribeToEvent<MessageType>(callback: (data: MessageType) => void) {
 	const channel = usePusherStore((state) => state.channel);
 
 	const stableCallback = useRef(callback);
 
-	// Keep callback sync'd
 	useEffect(() => {
 		stableCallback.current = callback;
 	}, [callback]);
@@ -109,23 +105,13 @@ export function useSubscribeToEvent<MessageType>(
 		const reference = (data: MessageType) => {
 			stableCallback.current(data);
 		};
-		if (eventName.includes(',')) {
-			eventName
-				.replace(/ /g, '')
-				.split(',')
-				.forEach((event) => {
-					channel.bind(event, reference);
-				});
-		} else {
-			channel.bind(eventName, reference);
-		}
 
-		console.log(channel);
+		channel.bind_global(reference);
 
 		return () => {
-			channel.unbind(eventName, reference);
+			channel.unbind_global(reference);
 		};
-	}, [channel, eventName]);
+	}, [channel]);
 }
 
 export const useCurrentMemberCount = () => usePusherStore((s) => s.members.size);

@@ -36,3 +36,13 @@ export const useAuthorizedUserStore = create<AuthorizedUserState>()((set) => ({
 	isAuthorized: false,
 	setIsAuthorized: (isAuthorized) => set({ isAuthorized }),
 }));
+
+export interface ModalAddTaskState {
+	isOpen: boolean;
+	setIsOpen: (isOpen: boolean) => void;
+}
+
+export const useModalAddTaskStore = create<ModalAddTaskState>()((set) => ({
+	isOpen: false,
+	setIsOpen: (isOpen) => set({ isOpen }),
+}));

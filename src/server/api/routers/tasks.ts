@@ -118,7 +118,7 @@ export const tasksRouter = createTRPCRouter({
 				endTime: z.string(),
 			})
 		)
-		.mutation(({ input, ctx }) => {
+		.mutation(async ({ input, ctx }) => {
 			const { id, title, description, type, startDate, startTime, endDate, endTime } = input;
 
 			let newTitle = '';
@@ -139,7 +139,7 @@ export const tasksRouter = createTRPCRouter({
 				}
 			}
 
-			return ctx.prisma.task.update({
+			const taskUpdated = await ctx.prisma.task.update({
 				where: {
 					id,
 				},
@@ -153,6 +153,10 @@ export const tasksRouter = createTRPCRouter({
 					endTime,
 				},
 			});
+
+			await pusherServerClient.trigger(`user-shayenek`, 'task-updated', {});
+
+			return taskUpdated;
 		}),
 	updateTaskPosition: protectedProcedure
 		.input(

@@ -1,30 +1,17 @@
 import { TextInput, Group, Textarea, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
+import { closeModal } from '@mantine/modals';
 import { type Task } from '@prisma/client';
 import { IconCalendar } from '@tabler/icons-react';
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
 
-const TaskForm = ({
-	className,
-	onSubmit,
-	task,
-}: {
-	className?: string;
-	onSubmit?: () => void;
-	task?: Task;
-}) => {
-	const { data: sessionData } = useSession();
+const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
-
-	const { refetch } = api.tasks.getAllTasks.useQuery(undefined, {
-		enabled: sessionData?.user !== undefined,
-	});
 
 	const addTaskForm = useForm({
 		initialValues: {
@@ -42,16 +29,13 @@ const TaskForm = ({
 	const addTask = api.tasks.createTask.useMutation({
 		onSuccess: () => {
 			addTaskForm.reset();
-			onSubmit?.();
-			void refetch();
+			closeModal('addTaskModal');
 		},
 	});
 
 	const updateTask = api.tasks.updateTask.useMutation({
 		onSuccess: () => {
-			addTaskForm.reset();
-			onSubmit?.();
-			void refetch();
+			closeModal('editTaskModal');
 		},
 	});
 

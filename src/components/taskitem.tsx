@@ -5,7 +5,11 @@ import { IconLink } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
 import React, { useState, type ReactNode } from 'react';
 
+import { type ThemeState, useThemeStore } from '~/store/store';
 import isDarkColor from '~/utils/isDarkColor';
+import openGlobalModal from '~/utils/modal';
+
+import TaskForm from './taskform';
 
 const TaskHeader: (
 	taskTitle: string,
@@ -100,7 +104,6 @@ const TaskDescription: (taskDescription: string) => ReactNode = (taskDescription
 
 const TaskElement = ({
 	task,
-	updateElement,
 	deleteAction,
 	updateTaskStatus,
 	isBeingDeleted,
@@ -110,7 +113,6 @@ const TaskElement = ({
 	className,
 }: {
 	task: Task;
-	updateElement: () => void;
 	deleteAction: () => void;
 	updateTaskStatus: () => void;
 	isBeingDeleted: boolean;
@@ -121,7 +123,7 @@ const TaskElement = ({
 }) => {
 	const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
 	const { data: sessionData } = useSession();
-	// const [taskDescription, setTaskDescription] = useState<string | ReactNode>('');
+	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
 
 	const startDate = task.startDate;
 	const endDate = task.endDate;
@@ -141,6 +143,15 @@ const TaskElement = ({
 			clearTimeout(timer);
 			// alert('short press is triggered');
 		}
+	};
+
+	const openEditTaskModal = () => {
+		openGlobalModal(
+			'editTaskModal',
+			`Update item: ${task.title.replace(/-\[rgb\(\d+,\d+,\d+\)\]/g, '')}`,
+			<TaskForm task={task} />,
+			currentTheme
+		);
 	};
 
 	return (
@@ -203,7 +214,7 @@ const TaskElement = ({
 				{sessionData && (
 					<>
 						<button
-							onClick={updateElement}
+							onClick={openEditTaskModal}
 							className={`w-20 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800 ${
 								deletionInProgress ? 'opacity-50' : 'opacity-100'
 							}`}

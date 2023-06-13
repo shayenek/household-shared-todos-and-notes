@@ -15,12 +15,12 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
 	return (
 		<MantineProvider withGlobalStyles withNormalizeCSS>
-			<ModalsProvider>
-				<SessionProvider session={session}>
+			<SessionProvider session={session}>
+				<ModalsProvider>
 					<Component {...pageProps} />
 					<Notifications />
-				</SessionProvider>
-			</ModalsProvider>
+				</ModalsProvider>
+			</SessionProvider>
 		</MantineProvider>
 	);
 };

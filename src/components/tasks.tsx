@@ -292,11 +292,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 								{...droppableProvided.droppableProps}
 							>
 								{taskData?.map((task, index) => (
-									<Draggable
-										draggableId={task.id}
-										key={task.id}
-										index={index}
-									>
+									<Draggable draggableId={task.id} key={task.id} index={index}>
 										{(draggableProvided, draggableSnapshot) => (
 											<div
 												{...draggableProvided.draggableProps}

@@ -1,5 +1,5 @@
 import { TextInput } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { isNotEmpty, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconLock } from '@tabler/icons-react';
 import { setCookie, getCookie, deleteCookie } from 'cookies-next';
@@ -77,6 +77,10 @@ const Home: NextPage = () => {
 		initialValues: {
 			loginCode: '',
 		},
+		validate: {
+			loginCode: (value) =>
+				value.length < 4 ? 'Login code must be at least 4 characters long' : null,
+		},
 	});
 
 	const checkLoginCode = api.login.checkLoginCode.useMutation({
@@ -89,6 +93,13 @@ const Home: NextPage = () => {
 				useAuthorizedUserStore.setState({ isAuthorized: true });
 			}
 			loginCodeForm.reset();
+		},
+		onError: (error) => {
+			notifications.show({
+				title: 'Error',
+				message: error.message,
+				color: 'red',
+			});
 		},
 	});
 
@@ -163,9 +174,9 @@ const Home: NextPage = () => {
 										Sign In
 									</button>
 									<form
-										onSubmit={loginCodeForm.onSubmit((values) =>
-											console.log(values)
-										)}
+										onSubmit={loginCodeForm.onSubmit((values) => {
+											checkLoginCode.mutate({ ...values });
+										})}
 										className="flex w-60 flex-col items-center gap-2 rounded-lg bg-white p-3 transition duration-200 dark:bg-white/10"
 									>
 										<TextInput
@@ -190,11 +201,12 @@ const Home: NextPage = () => {
 											mb="sm"
 										/>
 										<button
-											onClick={() => {
-												checkLoginCode.mutate({ ...loginCodeForm.values });
-											}}
 											type="submit"
-											className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 px-6 text-sm text-[#02080f] transition duration-200 hover:bg-blue-500 hover:text-white dark:border-[#2b3031] dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+											className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 px-6 text-sm text-[#02080f] transition duration-200 enabled:hover:bg-blue-500 enabled:hover:text-white disabled:opacity-50 dark:border-[#2b3031] dark:bg-white/10 dark:text-white enabled:dark:hover:bg-white/20"
+											disabled={
+												checkLoginCode.isLoading ||
+												loginCodeForm.values.loginCode.length < 1
+											}
 										>
 											Login
 										</button>

@@ -1,6 +1,7 @@
 import { Loader } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { type Task } from '@prisma/client';
+import { IconDragDrop } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
@@ -10,33 +11,10 @@ import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
 import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
+import { useScrollPosition } from '~/utils/useScrollPosition';
 
 const TASKS_LIMIT_PER_PAGE = 5;
 const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
-
-const useScrollPosition = () => {
-	const [scrollPosition, setScrollPosition] = useState<number>(0);
-
-	const handleScroll = () => {
-		const height =
-			document.documentElement.scrollHeight - document.documentElement.clientHeight;
-		const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-		const scrolled = (winScroll / height) * 100;
-
-		setScrollPosition(scrolled);
-	};
-
-	useEffect(() => {
-		window.addEventListener('scroll', handleScroll, {
-			passive: true,
-		});
-		return () => {
-			window.removeEventListener('scroll', handleScroll);
-		};
-	}, []);
-
-	return scrollPosition;
-};
 
 const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	const { data: sessionData } = useSession();
@@ -282,10 +260,24 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 										{(draggableProvided, draggableSnapshot) => (
 											<div
 												{...draggableProvided.draggableProps}
-												{...draggableProvided.dragHandleProps}
+												{...(isMobile
+													? draggableProvided.dragHandleProps
+													: {})}
 												ref={draggableProvided.innerRef}
 												data-position={task.position}
+												className="relative"
 											>
+												{!isMobile && (
+													<div
+														className="absolute bottom-2 right-2 z-[1]"
+														{...draggableProvided.dragHandleProps}
+													>
+														<IconDragDrop
+															size={20}
+															className="stroke-[#7c7e82] dark:stroke-[#7e8083]"
+														/>
+													</div>
+												)}
 												<TaskElement
 													task={task}
 													deleteAction={() => {

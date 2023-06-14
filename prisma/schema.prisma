@@ -82,6 +82,7 @@ model Task {
   startTime   String? @default("00:00")
   endDate     DateTime?
   endTime     String? @default("00:00")
+  calendarEventId String?
   position    Int
 }
 

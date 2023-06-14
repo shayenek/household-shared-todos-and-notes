@@ -18,7 +18,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
 			<SessionProvider session={session}>
 				<ModalsProvider>
 					<Component {...pageProps} />
-					<Notifications />
+					<Notifications position="top-right" limit={5} />
 				</ModalsProvider>
 			</SessionProvider>
 		</MantineProvider>

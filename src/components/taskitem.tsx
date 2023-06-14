@@ -17,7 +17,6 @@ const TaskHeader: (
 	activatedHashFilter: string
 ) => ReactNode = (taskTitle, handleClickWord, activatedHashFilter) => {
 	const handleClickWrapper: (text: string) => void = (text) => {
-		console.log(text, activatedHashFilter);
 		handleClickWord(text);
 	};
 
@@ -80,7 +79,7 @@ const TaskDescription: (taskDescription: string) => ReactNode = (taskDescription
 						href={word}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-block text-blue-500 hover:underline"
+						className="inline text-blue-500 hover:underline"
 						key={word}
 					>
 						<IconLink size={18} className="mr-1 inline" />

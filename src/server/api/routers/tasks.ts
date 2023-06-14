@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/api/trpc';
 import { prisma } from '~/server/db';
+import createCalendarAppointment, {
+	deleteCalendarAppointment,
+	getHash,
+} from '~/server/googlecalendar';
 import { pusherServerClient } from '~/server/pusher';
 
 const wordToRgbColor: (word: string) => string = (word) => {
@@ -30,14 +34,16 @@ export const tasksRouter = createTRPCRouter({
 				description: z.string(),
 				authorId: z.string().optional(),
 				type: z.string(),
-				startDate: z.date().optional(),
-				startTime: z.string().optional(),
-				endDate: z.date().optional(),
-				endTime: z.string().optional(),
+				startDate: z.date(),
+				startTime: z.string(),
+				endDate: z.date(),
+				endTime: z.string(),
+				calendarEventId: z.string().optional(),
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
 			const { title, description, type, startDate, startTime, endDate, endTime } = input;
+			const calendarEventId = type === 'task' ? getHash(`${title}${description}`) : null;
 
 			let newTitle = '';
 			if (title.includes('#')) {
@@ -79,10 +85,48 @@ export const tasksRouter = createTRPCRouter({
 					endDate,
 					endTime,
 					position: newPosition,
+					calendarEventId,
 				},
 			});
 
 			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {});
+
+			if (type === 'task') {
+				if (!calendarEventId) return;
+
+				const [startHours, startMinutes] = startTime.split(':');
+				const [endHours, endMinutes] = endTime.split(':');
+
+				const combinedStartDateTime = new Date(startDate);
+				combinedStartDateTime.setHours(parseInt(startHours || '12'));
+				combinedStartDateTime.setMinutes(parseInt(startMinutes || '00'));
+
+				const combinedEndDateTime = new Date(endDate);
+				combinedEndDateTime.setHours(parseInt(endHours || '12'));
+				combinedEndDateTime.setMinutes(parseInt(endMinutes || '00'));
+
+				const combinedStartISOString = combinedStartDateTime.toISOString();
+				const combinedEndISOString = combinedEndDateTime.toISOString();
+
+				const createEvent = await createCalendarAppointment({
+					id: calendarEventId,
+					start: combinedStartISOString,
+					end: combinedEndISOString,
+					location: 'Online',
+					summary: title,
+					description: description,
+				});
+
+				if (createEvent) {
+					if (createEvent.status === 200) {
+						console.log('Event created successfully');
+						return;
+					} else {
+						console.log('Event creation failed');
+						return;
+					}
+				}
+			}
 
 			return taskItem;
 		}),
@@ -93,10 +137,10 @@ export const tasksRouter = createTRPCRouter({
 				completed: z.boolean(),
 			})
 		)
-		.mutation(({ input, ctx }) => {
+		.mutation(async ({ input, ctx }) => {
 			const { id, completed } = input;
 
-			return ctx.prisma.task.update({
+			const taskUpdate = await ctx.prisma.task.update({
 				where: {
 					id,
 				},
@@ -104,6 +148,12 @@ export const tasksRouter = createTRPCRouter({
 					completed,
 				},
 			});
+
+			if (taskUpdate.type === 'task' && taskUpdate.calendarEventId) {
+				await deleteCalendarAppointment(taskUpdate.calendarEventId);
+			}
+
+			return taskUpdate;
 		}),
 	updateTask: protectedProcedure
 		.input(
@@ -195,6 +245,10 @@ export const tasksRouter = createTRPCRouter({
 					id,
 				},
 			});
+
+			if (deleteTask.type === 'task' && deleteTask.calendarEventId) {
+				await deleteCalendarAppointment(deleteTask.calendarEventId);
+			}
 
 			await pusherServerClient.trigger(`user-shayenek`, 'delete-task', {});
 

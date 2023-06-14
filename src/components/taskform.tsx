@@ -1,10 +1,10 @@
-import { TextInput, Group, Textarea, Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
-import { useForm } from '@mantine/form';
+import { TextInput, Group, Textarea, ActionIcon } from '@mantine/core';
+import { DatePickerInput, TimeInput } from '@mantine/dates';
+import { isNotEmpty, useForm } from '@mantine/form';
 import { closeModal } from '@mantine/modals';
 import { type Task } from '@prisma/client';
-import { IconCalendar } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { IconCalendar, IconClock } from '@tabler/icons-react';
+import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 
 import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
@@ -12,6 +12,9 @@ import { api } from '~/utils/api';
 const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 	const [formType, setFormType] = useState<'note' | 'task'>('note');
 	const currentTheme = useThemeStore((state: ThemeState) => state.theme);
+
+	const startTimeRef = useRef<HTMLInputElement>();
+	const endTimeRef = useRef<HTMLInputElement>();
 
 	const addTaskForm = useForm({
 		initialValues: {
@@ -23,6 +26,12 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			startTime: '',
 			endDate: new Date(),
 			endTime: '',
+		},
+		validate: {
+			startDate: formType === 'task' ? isNotEmpty('Start date is required') : undefined,
+			startTime: formType === 'task' ? isNotEmpty('Start time is required') : undefined,
+			endDate: formType === 'task' ? isNotEmpty('End date is required') : undefined,
+			endTime: formType === 'task' ? isNotEmpty('End time is required') : undefined,
 		},
 	});
 
@@ -38,28 +47,6 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			closeModal('editTaskModal');
 		},
 	});
-
-	const createTimesThroughDay = () => {
-		const times: string[] = [];
-		for (let i = 0; i < 24; i++) {
-			for (let j = 0; j < 60; j += 15) {
-				if (i < 10) {
-					if (j < 10) {
-						times.push(`0${i}:0${j}`);
-					} else {
-						times.push(`0${i}:${j}`);
-					}
-				} else {
-					if (j < 10) {
-						times.push(`${i}:0${j}`);
-					} else {
-						times.push(`${i}:${j}`);
-					}
-				}
-			}
-		}
-		return times;
-	};
 
 	useEffect(() => {
 		if (task) {
@@ -88,7 +75,16 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 				</button>
 			</div>
 			<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
-			<form onSubmit={addTaskForm.onSubmit((values) => console.log(values))}>
+			<form
+				onSubmit={addTaskForm.onSubmit((values) => {
+					console.log(values);
+					if (task) {
+						updateTask.mutate({ ...values });
+						return;
+					}
+					addTask.mutate({ ...values, type: formType });
+				})}
+			>
 				<TextInput
 					label="Task title"
 					placeholder="Title"
@@ -110,7 +106,6 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 				/>
 
 				<Textarea
-					withAsterisk
 					label="Task description"
 					placeholder="desc"
 					minRows={8}
@@ -139,7 +134,6 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 							valueFormat="DD-MM-YYYY"
 							label="Start date"
 							placeholder="Start date"
-							maw={400}
 							mx="auto"
 							{...addTaskForm.getInputProps('startDate')}
 							styles={{
@@ -163,11 +157,18 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 							}}
 							mb="sm"
 						/>
-						<Select
-							label="Start time"
-							placeholder="Start time"
-							data={createTimesThroughDay()}
+						<TimeInput
 							{...addTaskForm.getInputProps('startTime')}
+							label="Start time"
+							ref={startTimeRef as MutableRefObject<HTMLInputElement>}
+							rightSection={
+								<ActionIcon
+									onClick={() => startTimeRef?.current?.showPicker()}
+									className="hover:dark:bg-[#1d1f20]"
+								>
+									<IconClock size="1rem" stroke={1.5} />
+								</ActionIcon>
+							}
 							styles={{
 								label: {
 									color: currentTheme === 'dark' ? '#fff' : '#030910',
@@ -189,13 +190,13 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 							}}
 							mb="sm"
 						/>
+
 						<DatePickerInput
 							icon={<IconCalendar size="1.1rem" stroke={1.5} />}
 							clearable
 							valueFormat="DD-MM-YYYY"
 							label="End date"
 							placeholder="End date"
-							maw={400}
 							mx="auto"
 							minDate={addTaskForm.values.startDate}
 							{...addTaskForm.getInputProps('endDate')}
@@ -231,11 +232,18 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 							}}
 							mb="sm"
 						/>
-						<Select
-							label="End time"
-							placeholder="End time"
-							data={createTimesThroughDay()}
+						<TimeInput
 							{...addTaskForm.getInputProps('endTime')}
+							label="End time"
+							ref={endTimeRef as MutableRefObject<HTMLInputElement>}
+							rightSection={
+								<ActionIcon
+									onClick={() => endTimeRef?.current?.showPicker()}
+									className="hover:dark:bg-[#1d1f20]"
+								>
+									<IconClock size="1rem" stroke={1.5} />
+								</ActionIcon>
+							}
 							styles={{
 								label: {
 									color: currentTheme === 'dark' ? '#fff' : '#030910',
@@ -262,13 +270,6 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 
 				<Group position="center" mt="md">
 					<button
-						onClick={() => {
-							if (task) {
-								updateTask.mutate({ ...addTaskForm.values, id: task.id });
-								return;
-							}
-							addTask.mutate({ ...addTaskForm.values, type: formType });
-						}}
 						type="submit"
 						className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white"
 					>

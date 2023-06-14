@@ -7,7 +7,12 @@ import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import TaskElement from '~/components/taskitem';
-import { type TaskAuthorState, useTaskAuthorStore } from '~/store/store';
+import {
+	type TaskAuthorState,
+	useTaskAuthorStore,
+	useLayoutStore,
+	type LayoutState,
+} from '~/store/store';
 import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
@@ -16,9 +21,10 @@ import { useScrollPosition } from '~/utils/useScrollPosition';
 const TASKS_LIMIT_PER_PAGE = 5;
 const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
 
-const Tasks = ({ isMobile }: { isMobile: boolean }) => {
+const Tasks = () => {
 	const { data: sessionData } = useSession();
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
+	const isMobile = useLayoutStore((state: LayoutState) => state.isMobile);
 
 	const [taskData, setTaskData] = useState<Task[]>([]);
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
@@ -222,7 +228,7 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 		<>
 			<div
 				className={`flex w-full flex-col justify-center gap-4 md:self-start ${
-					sessionData ? 'md:max-w-[36rem]' : ''
+					sessionData ? 'md:max-w-[48rem]' : ''
 				}`}
 			>
 				<div className="align-center flex justify-between gap-2">
@@ -319,10 +325,10 @@ const Tasks = ({ isMobile }: { isMobile: boolean }) => {
 	);
 };
 
-export default function TasksWrapper({ isMobile }: { isMobile: boolean }) {
+export default function TasksWrapper() {
 	return (
 		<PusherProvider slug={`user-shayenek`}>
-			<Tasks isMobile={isMobile} />
+			<Tasks />
 		</PusherProvider>
 	);
 }

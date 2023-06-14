@@ -56,9 +56,9 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 
 	return (
 		<div
-			className={`top-5 w-full rounded-lg bg-white transition duration-200 dark:bg-[#1d1f20] md:sticky md:self-start md:p-4 lg:min-w-[20rem] ${
+			className={`top-5 w-full rounded-lg bg-white transition duration-200 dark:bg-[#1d1f20] md:sticky md:self-start md:p-4 ${
 				className ?? ''
-			} ${!task ? 'md:max-w-[20rem]' : ''}`}
+			}`}
 		>
 			<div className="flex justify-center gap-2">
 				<button

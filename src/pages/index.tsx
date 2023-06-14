@@ -2,13 +2,12 @@ import { TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconLock } from '@tabler/icons-react';
-import { setCookie, getCookie, deleteCookie } from 'cookies-next';
+import { setCookie, getCookie } from 'cookies-next';
 import { type NextPage } from 'next';
 import Head from 'next/head';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
-import ThemeSwitcher from '~/components/switchtheme';
 import {
 	type AuthorizedUserState,
 	useAuthorizedUserStore,
@@ -30,8 +29,6 @@ const Home: NextPage = () => {
 		enabled: sessionData?.user !== undefined,
 	});
 
-	const [width, setWidth] = useState<number>(0);
-
 	const checkSessionToken = api.login.checkSession.useMutation({
 		onSuccess: () => {
 			useAuthorizedUserStore.setState({ isAuthorized: true });
@@ -46,24 +43,6 @@ const Home: NextPage = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
-
-	useEffect(() => {
-		const handleWindowSizeChange = () => {
-			if (typeof window !== 'undefined') {
-				setWidth(window.innerWidth);
-			}
-		};
-
-		if (typeof window !== 'undefined') {
-			setWidth(window.innerWidth);
-			window.addEventListener('resize', handleWindowSizeChange);
-			return () => {
-				window.removeEventListener('resize', handleWindowSizeChange);
-			};
-		}
-	}, []);
-
-	const isMobile = width <= 768;
 
 	useEffect(() => {
 		if (currentTheme === 'dark') {
@@ -122,12 +101,6 @@ const Home: NextPage = () => {
 		}
 	}, [sessionData, userData]);
 
-	const handleSignOut = async () => {
-		await signOut();
-		useAuthorizedUserStore.setState({ isAuthorized: false });
-		deleteCookie('sessionToken');
-	};
-
 	return (
 		<>
 			<Head>
@@ -141,14 +114,6 @@ const Home: NextPage = () => {
 						!isAuthorized ? 'items-center justify-center' : ''
 					}`}
 				>
-					{isAuthorized && (
-						<button
-							className="mt-4 hidden rounded-full bg-red-500 px-10 py-3 font-semibold text-white no-underline transition hover:bg-red-800 md:absolute md:right-4 md:block"
-							onClick={() => void handleSignOut()}
-						>
-							Sign Out
-						</button>
-					)}
 					<div
 						className={`container mb-20 flex flex-col items-center justify-center gap-12 p-4 md:mb-0 md:mt-0 md:py-16 ${
 							sessionData ? 'mt-14' : ''
@@ -213,15 +178,10 @@ const Home: NextPage = () => {
 									</form>
 								</>
 							)}
-							{isAuthorized && <Logged isMobile={isMobile} />}
+							{isAuthorized && <Logged />}
 						</div>
 					</div>
 				</section>
-				{!isMobile || !isAuthorized ? (
-					<div className="fixed bottom-5 right-5">
-						<ThemeSwitcher size="h-[32px] w-[64px]" />
-					</div>
-				) : null}
 			</main>
 		</>
 	);

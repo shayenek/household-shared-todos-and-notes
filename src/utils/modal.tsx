@@ -13,6 +13,7 @@ const openGlobalModal = (
 		styles: {
 			title: {
 				lineHeight: '1.75',
+				marginRight: '0.75rem',
 			},
 			content: {
 				background: currentTheme === 'dark' ? '#1d1f20' : '#fff',

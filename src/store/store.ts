@@ -7,11 +7,6 @@ export interface ThemeState {
 	setTheme: (theme: 'light' | 'dark') => void;
 }
 
-export interface TaskAuthorState {
-	taskAuthor: TaskAuthorType;
-	setTaskAuthor: (taskAuthor: TaskAuthorType) => void;
-}
-
 export const useThemeStore = create<ThemeState>()((set) => ({
 	theme:
 		typeof window !== 'undefined'
@@ -21,6 +16,30 @@ export const useThemeStore = create<ThemeState>()((set) => ({
 			: 'dark',
 	setTheme: (theme) => set({ theme }),
 }));
+
+export interface LayoutState {
+	isMobile: boolean;
+	layout: 'mobile' | 'desktop';
+	setIsMobile: (isMobile: boolean) => void;
+	setLayout: (layout: 'mobile' | 'desktop') => void;
+}
+
+export const useLayoutStore = create<LayoutState>()((set) => ({
+	isMobile: false,
+	layout:
+		typeof window !== 'undefined'
+			? window.innerWidth < 768
+				? 'mobile'
+				: 'desktop'
+			: 'desktop',
+	setIsMobile: (isMobile) => set({ isMobile }),
+	setLayout: (layout) => set({ layout }),
+}));
+
+export interface TaskAuthorState {
+	taskAuthor: TaskAuthorType;
+	setTaskAuthor: (taskAuthor: TaskAuthorType) => void;
+}
 
 export const useTaskAuthorStore = create<TaskAuthorState>()((set) => ({
 	taskAuthor: 'all',

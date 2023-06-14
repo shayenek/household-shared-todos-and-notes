@@ -24,7 +24,7 @@ const MobileNavbar = () => {
 
 	return (
 		<div
-			className={`fixed z-50 flex items-center justify-center gap-1 p-4 transition duration-200 md:hidden ${
+			className={`fixed z-50 flex items-center justify-center gap-1 p-4 transition duration-200 ${
 				sessionData
 					? 'bottom-0 left-0 right-0 gap-2 bg-white shadow-main dark:bg-[#1d1f20]'
 					: 'bottom-0 right-0'
@@ -38,7 +38,7 @@ const MobileNavbar = () => {
 					<IconPlus size="1.5rem" />
 				</button>
 			)}
-			<div className="flex h-12 items-center rounded-lg border-2 border-[#eeedf0] bg-white font-semibold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
+			<div className="flex h-12 items-center rounded-lg border-2 border-[#eeedf0] bg-white pl-4 font-semibold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white">
 				<ThemeSwitcher size="h-[26px] w-[52px]" />
 			</div>
 			<button

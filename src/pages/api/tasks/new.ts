@@ -7,10 +7,12 @@ import { env } from '~/env.mjs';
 import { appRouter } from '../../../server/api/root';
 import { createTRPCContext } from '../../../server/api/trpc';
 
-const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
+const createNewTask = async (req: NextApiRequest, res: NextApiResponse) => {
 	// Create context and caller
 	const ctx = await createTRPCContext({ req, res });
 	const caller = appRouter.createCaller(ctx);
+
+	console.log(req);
 
 	if (req.headers.authorization !== env.NEXTAUTH_SECRET) {
 		console.log('Error in api call');
@@ -20,8 +22,24 @@ const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
 	console.log('api call success');
 
 	try {
-		const tasks = await caller.tasks.getAllTasksPublic();
-		res.status(200).json(tasks);
+		const { title, description } = req.body as {
+			title: string;
+			description: string;
+		};
+		console.log(title, description);
+		if (!title) {
+			return res.status(400).json({ error: 'Invalid title' });
+		}
+		if (!description) {
+			return res.status(400).json({ error: 'Invalid description' });
+		}
+
+		const newTask = await caller.tasks.createTaskPublic({
+			title: title,
+			description: description,
+		});
+		console.log('Task created');
+		res.status(200).json(newTask);
 	} catch (cause) {
 		if (cause instanceof TRPCError) {
 			// An error from tRPC occured
@@ -34,4 +52,4 @@ const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 };
 
-export default allTasksPublic;
+export default createNewTask;

@@ -79,7 +79,7 @@ const TaskDescription: (taskDescription: string) => ReactNode = (taskDescription
 						href={word}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline text-blue-500 hover:underline"
+						className="inline-block text-blue-500 hover:underline"
 						key={word}
 					>
 						<IconLink size={18} className="mr-1 inline" />

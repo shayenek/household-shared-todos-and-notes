@@ -254,13 +254,6 @@ export const tasksRouter = createTRPCRouter({
 
 			return deleteTask;
 		}),
-	getAllTasks: publicProcedure.query(() => {
-		return prisma.task.findMany({
-			orderBy: {
-				createdAt: 'desc',
-			},
-		});
-	}),
 	getInfiniteTasks: protectedProcedure
 		.input(
 			z.object({
@@ -301,4 +294,94 @@ export const tasksRouter = createTRPCRouter({
 			});
 		}
 	}),
+	// Native queries
+	getAllTasksPublic: publicProcedure.query(() => {
+		return prisma.task.findMany({
+			orderBy: {
+				createdAt: 'desc',
+			},
+		});
+	}),
+	createTaskPublic: publicProcedure
+		.input(
+			z.object({
+				title: z.string(),
+				description: z.string(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { title, description } = input;
+
+			let newTitle = '';
+			if (title.includes('#')) {
+				const taskTitleArray = title.split('#');
+				const firstPart = taskTitleArray[0]?.trim();
+				const hashtags = taskTitleArray.slice(1);
+
+				const modifiedHashtags = hashtags.map((hashtag) => {
+					const trimmedHashtag = hashtag.trim();
+					return '#' + trimmedHashtag + '-[' + wordToRgbColor(trimmedHashtag) + ']';
+				});
+
+				if (firstPart) {
+					newTitle = firstPart + ' ' + modifiedHashtags.join(' ');
+				} else {
+					newTitle = modifiedHashtags.join(' ');
+				}
+			}
+
+			const lastTask = await ctx.prisma.task.findFirst({
+				orderBy: {
+					position: 'desc',
+				},
+				select: {
+					position: true,
+				},
+			});
+
+			const newPosition = (lastTask?.position || 0) + 1024;
+
+			const taskItem = await ctx.prisma.task.create({
+				data: {
+					title: newTitle || title,
+					description,
+					author: { connect: { id: 'cliljn3ly0000ufokenumit3j' } },
+					type: 'note',
+					startDate: null,
+					startTime: null,
+					endDate: null,
+					endTime: null,
+					position: newPosition,
+					calendarEventId: null,
+				},
+			});
+
+			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {});
+
+			return taskItem;
+		}),
+
+	deleteTaskPublic: publicProcedure
+		.input(
+			z.object({
+				id: z.string(),
+			})
+		)
+		.mutation(async ({ input }) => {
+			const id = input.id;
+
+			const deleteTask = await prisma.task.delete({
+				where: {
+					id,
+				},
+			});
+
+			if (deleteTask.type === 'task' && deleteTask.calendarEventId) {
+				await deleteCalendarAppointment(deleteTask.calendarEventId);
+			}
+
+			await pusherServerClient.trigger(`user-shayenek`, 'delete-task', {});
+
+			return deleteTask;
+		}),
 });

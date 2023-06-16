@@ -4,10 +4,10 @@ import { type NextApiRequest, type NextApiResponse } from 'next';
 
 import { env } from '~/env.mjs';
 
-import { appRouter } from '../../../server/api/root';
-import { createTRPCContext } from '../../../server/api/trpc';
+import { appRouter } from '../../../../server/api/root';
+import { createTRPCContext } from '../../../../server/api/trpc';
 
-const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
+const deleteTaskById = async (req: NextApiRequest, res: NextApiResponse) => {
 	// Create context and caller
 	const ctx = await createTRPCContext({ req, res });
 	const caller = appRouter.createCaller(ctx);
@@ -20,8 +20,13 @@ const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
 	console.log('api call success');
 
 	try {
-		const tasks = await caller.tasks.getAllTasksPublic();
-		res.status(200).json(tasks);
+		const { id } = req.query;
+		if (!id || typeof id !== 'string') {
+			return res.status(400).json({ error: 'Invalid id' });
+		}
+		await caller.tasks.deleteTaskPublic({ id: id });
+		console.log('Task deleted');
+		res.status(200).json('Task deleted');
 	} catch (cause) {
 		if (cause instanceof TRPCError) {
 			// An error from tRPC occured
@@ -34,4 +39,4 @@ const allTasksPublic = async (req: NextApiRequest, res: NextApiResponse) => {
 	}
 };
 
-export default allTasksPublic;
+export default deleteTaskById;

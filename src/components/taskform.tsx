@@ -2,6 +2,7 @@ import { TextInput, Group, Textarea, ActionIcon } from '@mantine/core';
 import { DatePickerInput, TimeInput } from '@mantine/dates';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { closeModal } from '@mantine/modals';
+import { notifications } from '@mantine/notifications';
 import { type Task } from '@prisma/client';
 import { IconCalendar, IconClock } from '@tabler/icons-react';
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			endTime: '',
 		},
 		validate: {
+			description: isNotEmpty('Description is required'),
 			startDate: formType === 'task' ? isNotEmpty('Start date is required') : undefined,
 			startTime: formType === 'task' ? isNotEmpty('Start time is required') : undefined,
 			endDate: formType === 'task' ? isNotEmpty('End date is required') : undefined,
@@ -39,12 +41,22 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 		onSuccess: () => {
 			addTaskForm.reset();
 			closeModal('addTaskModal');
+			notifications.show({
+				title: 'Task created',
+				message: 'Task has been created successfully',
+				color: 'green',
+			});
 		},
 	});
 
 	const updateTask = api.tasks.updateTask.useMutation({
 		onSuccess: () => {
 			closeModal('editTaskModal');
+			notifications.show({
+				title: 'Task updated',
+				message: 'Task has been updated successfully',
+				color: 'green',
+			});
 		},
 	});
 
@@ -77,7 +89,6 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
 			<form
 				onSubmit={addTaskForm.onSubmit((values) => {
-					console.log(values);
 					if (task) {
 						updateTask.mutate({ ...values });
 						return;
@@ -270,8 +281,11 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 
 				<Group position="center" mt="md">
 					<button
+						disabled={addTask.isLoading}
 						type="submit"
-						className="basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white"
+						className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+							addTask.isLoading ? 'cursor-not-allowed opacity-50' : ''
+						}}`}
 					>
 						{!task ? 'Add' : 'Update'} {formType === 'task' ? 'task' : 'note'}
 					</button>

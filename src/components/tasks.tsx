@@ -1,5 +1,6 @@
 import { Loader } from '@mantine/core';
 import { modals } from '@mantine/modals';
+import { notifications } from '@mantine/notifications';
 import { type Task } from '@prisma/client';
 import { IconDragDrop } from '@tabler/icons-react';
 import { useSession } from 'next-auth/react';
@@ -52,21 +53,46 @@ const Tasks = () => {
 	);
 
 	const updateTaskStatus = api.tasks.updateTaskStatus.useMutation({
-		onSuccess: () => {
-			void refetch();
+		onSuccess: (variables) => {
+			const taskId = variables.id;
+			const taskStatus = variables.completed;
+			const newTaskData = taskData.map((task) => {
+				if (task.id === taskId) {
+					return { ...task, completed: taskStatus };
+				}
+
+				return task;
+			});
+			setTaskData(newTaskData);
 		},
 	});
 
 	const updateTaskPosition = api.tasks.updateTaskPosition.useMutation({
 		onSuccess: () => {
-			void refetch();
+			notifications.show({
+				title: 'Task position updated',
+				message: 'Task position has been updated successfully',
+				color: 'green',
+			});
+		},
+		onError: (error) => {
+			notifications.show({
+				title: 'Error',
+				message: error.message,
+				color: 'red',
+			});
 		},
 	});
 
 	const deleteTask = api.tasks.deleteTask.useMutation({
-		onSuccess: () => {
+		onSuccess: (variables) => {
 			setDeletionInProgress(false);
-			void refetch();
+			const newTaskData = taskData.filter((task) => task.id !== variables.id);
+			console.log(newTaskData);
+			setTaskData(newTaskData);
+			if (newTaskData.length < TASKS_LIMIT_PER_PAGE) {
+				void refetch();
+			}
 		},
 		onError: (error, data) => {
 			setIsBeingDeleted(data.id);
@@ -212,9 +238,26 @@ const Tasks = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [allTasksData, taskAuthor, hashWord]);
 
-	useSubscribeToEvent(() => {
-		console.log('event received');
-		void refetch();
+	useSubscribeToEvent((eventName, data: { task: Task }) => {
+		switch (eventName) {
+			case 'task-created':
+				setTaskData((prev) => [data.task, ...prev]);
+				break;
+			case 'task-updated':
+				console.log(data.task);
+				setTaskData((prev) => {
+					const newTaskData = [...prev];
+					const taskIndex = newTaskData.findIndex((task) => task.id === data.task.id);
+					newTaskData[taskIndex] = data.task;
+					return newTaskData;
+				});
+				break;
+			case 'task-deleted':
+				setTaskData((prev) => prev.filter((task) => task.id !== data.task.id));
+				break;
+			default:
+				break;
+		}
 	});
 
 	useEffect(() => {
@@ -294,7 +337,6 @@ const Tasks = () => {
 															id: task.id,
 															completed: !task.completed,
 														});
-														void refetch();
 													}}
 													isBeingDeleted={isBeingDeleted === task.id}
 													deletionInProgress={deletionInProgress}

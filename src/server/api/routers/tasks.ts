@@ -89,7 +89,9 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 
-			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {});
+			await pusherServerClient.trigger(`user-shayenek`, 'task-created', {
+				task: taskItem,
+			});
 
 			if (type === 'task') {
 				if (!calendarEventId) return;
@@ -204,7 +206,9 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 
-			await pusherServerClient.trigger(`user-shayenek`, 'task-updated', {});
+			await pusherServerClient.trigger(`user-shayenek`, 'task-updated', {
+				task: taskUpdated,
+			});
 
 			return taskUpdated;
 		}),
@@ -227,7 +231,7 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 
-			await pusherServerClient.trigger(`user-shayenek`, 'tasks-repositioned', {});
+			// await pusherServerClient.trigger(`user-shayenek`, 'tasks-repositioned', {});
 
 			return taskPositionUpdated;
 		}),
@@ -250,7 +254,9 @@ export const tasksRouter = createTRPCRouter({
 				await deleteCalendarAppointment(deleteTask.calendarEventId);
 			}
 
-			await pusherServerClient.trigger(`user-shayenek`, 'delete-task', {});
+			await pusherServerClient.trigger(`user-shayenek`, 'task-deleted', {
+				task: deleteTask,
+			});
 
 			return deleteTask;
 		}),
@@ -356,7 +362,9 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 
-			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {});
+			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {
+				task: taskItem,
+			});
 
 			return taskItem;
 		}),
@@ -380,7 +388,9 @@ export const tasksRouter = createTRPCRouter({
 				await deleteCalendarAppointment(deleteTask.calendarEventId);
 			}
 
-			await pusherServerClient.trigger(`user-shayenek`, 'delete-task', {});
+			await pusherServerClient.trigger(`user-shayenek`, 'task-deleted', {
+				task: deleteTask,
+			});
 
 			return deleteTask;
 		}),

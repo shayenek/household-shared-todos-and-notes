@@ -92,7 +92,9 @@ function usePusherStore<T>(
 	return useStore(store, selector, equalityFn);
 }
 
-export function useSubscribeToEvent<MessageType>(callback: (data: MessageType) => void) {
+export function useSubscribeToEvent<MessageType>(
+	callback: (eventName: string, data: MessageType) => void
+) {
 	const channel = usePusherStore((state) => state.channel);
 
 	const stableCallback = useRef(callback);
@@ -102,8 +104,8 @@ export function useSubscribeToEvent<MessageType>(callback: (data: MessageType) =
 	}, [callback]);
 
 	useEffect(() => {
-		const reference = (data: MessageType) => {
-			stableCallback.current(data);
+		const reference = (eventName: string, data: MessageType) => {
+			stableCallback.current(eventName, data);
 		};
 
 		channel.bind_global(reference);

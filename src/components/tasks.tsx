@@ -253,7 +253,15 @@ const Tasks = () => {
 				});
 				break;
 			case 'task-deleted':
-				setTaskData((prev) => prev.filter((task) => task.id !== data.task.id));
+				setTaskData((prev) => {
+					const newTaskData = [...prev];
+					const taskIndex = newTaskData.findIndex((task) => task.id === data.task.id);
+					newTaskData.splice(taskIndex, 1);
+					if (newTaskData.length < TASKS_LIMIT_PER_PAGE) {
+						void refetch();
+					}
+					return newTaskData;
+				});
 				break;
 			default:
 				break;

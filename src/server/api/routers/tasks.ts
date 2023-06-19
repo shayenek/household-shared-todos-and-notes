@@ -435,7 +435,7 @@ export const tasksRouter = createTRPCRouter({
 				},
 			});
 
-			await pusherServerClient.trigger(`user-shayenek`, 'new-task', {
+			await pusherServerClient.trigger(`user-shayenek`, 'task-created', {
 				task: taskItem,
 			});
 

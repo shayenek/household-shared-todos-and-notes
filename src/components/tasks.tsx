@@ -19,7 +19,8 @@ import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 import { useScrollPosition } from '~/utils/useScrollPosition';
 
-const TASKS_LIMIT_PER_PAGE = 5;
+const TASKS_LIMIT_PER_PAGE = 8;
+const TASKS_MIN_TO_REFETCH = 5;
 const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
 
 const Tasks = () => {
@@ -86,11 +87,15 @@ const Tasks = () => {
 
 	const deleteTask = api.tasks.deleteTask.useMutation({
 		onSuccess: (variables) => {
+			allTasksData?.pages.forEach((page) => {
+				const newPage = page.items.filter((task) => task.id !== variables.id);
+				page.items = newPage;
+			});
+
 			setDeletionInProgress(false);
 			const newTaskData = taskData.filter((task) => task.id !== variables.id);
-			console.log(newTaskData);
 			setTaskData(newTaskData);
-			if (newTaskData.length < TASKS_LIMIT_PER_PAGE) {
+			if (newTaskData.length < TASKS_MIN_TO_REFETCH) {
 				void refetch();
 			}
 		},
@@ -241,23 +246,35 @@ const Tasks = () => {
 	useSubscribeToEvent((eventName, data: { task: Task }) => {
 		switch (eventName) {
 			case 'task-created':
+				allTasksData?.pages[0]?.items.unshift(data.task);
 				setTaskData((prev) => [data.task, ...prev]);
 				break;
 			case 'task-updated':
-				console.log(data.task);
 				setTaskData((prev) => {
+					allTasksData?.pages.forEach((page) => {
+						const taskIndex = page.items.findIndex((task) => task.id === data.task.id);
+						if (taskIndex !== -1) {
+							page.items[taskIndex] = data.task;
+						}
+					});
+
 					const newTaskData = [...prev];
 					const taskIndex = newTaskData.findIndex((task) => task.id === data.task.id);
 					newTaskData[taskIndex] = data.task;
 					return newTaskData;
 				});
 				break;
-			case 'task-deleted':
+			case 'api-task-deleted':
 				setTaskData((prev) => {
+					allTasksData?.pages.forEach((page) => {
+						const newPage = page.items.filter((task) => task.id !== data.task.id);
+						page.items = newPage;
+					});
+					console.log('here');
 					const newTaskData = [...prev];
 					const taskIndex = newTaskData.findIndex((task) => task.id === data.task.id);
 					newTaskData.splice(taskIndex, 1);
-					if (newTaskData.length < TASKS_LIMIT_PER_PAGE) {
+					if (newTaskData.length < TASKS_MIN_TO_REFETCH) {
 						void refetch();
 					}
 					return newTaskData;
@@ -272,6 +289,14 @@ const Tasks = () => {
 		if (scrollPosition > SCROLL_POSITION_TO_FETCH_NEXT_PAGE && hasNextPage && !isFetching) {
 			void fetchNextPage();
 			setPage((prev) => prev + 1);
+			// refetch()
+			// 	.then(() => {
+			// 		void fetchNextPage();
+			// 		setPage((prev) => prev + 1);
+			// 	})
+			// 	.catch((err) => {
+			// 		console.log(err);
+			// 	});
 		}
 	}, [scrollPosition, fetchNextPage, hasNextPage, isFetching]);
 

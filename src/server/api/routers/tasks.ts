@@ -132,6 +132,79 @@ export const tasksRouter = createTRPCRouter({
 
 			return taskItem;
 		}),
+	createTaskBulk: publicProcedure.mutation(async ({ ctx }) => {
+		const lastTask = await ctx.prisma.task.findFirst({
+			orderBy: {
+				position: 'desc',
+			},
+			select: {
+				position: true,
+			},
+		});
+
+		const newPosition = (lastTask?.position || 0) + 1024;
+
+		return prisma.task.createMany({
+			data: [
+				{
+					title: 'Task 1',
+					description: 'Task 1 description',
+					authorId: 'cliljn3ly0000ufokenumit3j',
+					type: 'note',
+					startDate: new Date(),
+					startTime: '12:00',
+					endDate: new Date(),
+					endTime: '13:00',
+					position: newPosition,
+				},
+				{
+					title: 'Task 2',
+					description: 'Task 2 description',
+					authorId: 'cliljn3ly0000ufokenumit3j',
+					type: 'note',
+					startDate: new Date(),
+					startTime: '12:00',
+					endDate: new Date(),
+					endTime: '13:00',
+					position: newPosition + 1024,
+				},
+				{
+					title: 'Task 3',
+					description: 'Task 3 description',
+					authorId: 'cliljn3ly0000ufokenumit3j',
+					type: 'note',
+					startDate: new Date(),
+					startTime: '12:00',
+					endDate: new Date(),
+					endTime: '13:00',
+					position: newPosition + 2048,
+				},
+				{
+					title: 'Task 4',
+					description: 'Task 4 description',
+					authorId: 'cliljn3ly0000ufokenumit3j',
+					type: 'note',
+					startDate: new Date(),
+					startTime: '12:00',
+					endDate: new Date(),
+					endTime: '13:00',
+					position: newPosition + 3072,
+				},
+				{
+					title: 'Task 5',
+					description: 'Task 5 description',
+					authorId: 'cliljn3ly0000ufokenumit3j',
+					type: 'note',
+					startDate: new Date(),
+					startTime: '12:00',
+					endDate: new Date(),
+					endTime: '13:00',
+					position: newPosition + 4096,
+				},
+			],
+		});
+	}),
+
 	updateTaskStatus: protectedProcedure
 		.input(
 			z.object({
@@ -304,7 +377,7 @@ export const tasksRouter = createTRPCRouter({
 	getAllTasksPublic: publicProcedure.query(() => {
 		return prisma.task.findMany({
 			orderBy: {
-				createdAt: 'desc',
+				position: 'desc',
 			},
 		});
 	}),
@@ -388,7 +461,7 @@ export const tasksRouter = createTRPCRouter({
 				await deleteCalendarAppointment(deleteTask.calendarEventId);
 			}
 
-			await pusherServerClient.trigger(`user-shayenek`, 'task-deleted', {
+			await pusherServerClient.trigger(`user-shayenek`, 'api-task-deleted', {
 				task: deleteTask,
 			});
 

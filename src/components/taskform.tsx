@@ -7,6 +7,7 @@ import { type Task } from '@prisma/client';
 import { IconCalendar, IconClock } from '@tabler/icons-react';
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 
+import { env } from '~/env.mjs';
 import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
 
@@ -55,6 +56,16 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			notifications.show({
 				title: 'Task updated',
 				message: 'Task has been updated successfully',
+				color: 'green',
+			});
+		},
+	});
+
+	const addTaskBulk = api.tasks.createTaskBulk.useMutation({
+		onSuccess: () => {
+			notifications.show({
+				title: 'Tasks created',
+				message: 'Tasks have been created successfully',
 				color: 'green',
 			});
 		},
@@ -291,6 +302,16 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 					</button>
 				</Group>
 			</form>
+			{env.NEXT_PUBLIC_NODE_ENV === 'development' && (
+				<button
+					onClick={() => addTaskBulk.mutate()}
+					className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm text-[#02080f] transition duration-200 hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+						addTask.isLoading ? 'cursor-not-allowed opacity-50' : ''
+					}}`}
+				>
+					Add bulk data
+				</button>
+			)}
 		</div>
 	);
 };

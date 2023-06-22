@@ -1,6 +1,7 @@
 import { deleteCookie } from 'cookies-next';
 import { signOut, useSession } from 'next-auth/react';
 
+import { CollapsibleSidebar } from '~/components/collapsiblesidebar';
 import MobileNavbar from '~/components/mobilenavbar';
 import ThemeSwitcher from '~/components/switchtheme';
 import TaskForm from '~/components/taskform';
@@ -44,7 +45,12 @@ const Logged = () => {
 
 				<Tasks />
 				{isMobile && sessionData && <TopNavbar />}
-				{(isMobile || currentLayout === 'mobile') && <MobileNavbar />}
+				{(isMobile || currentLayout === 'mobile') && (
+					<>
+						<MobileNavbar />
+						<CollapsibleSidebar />
+					</>
+				)}
 			</div>
 			{(!isMobile || !isAuthorized) && currentLayout === 'desktop' ? (
 				<div className="fixed bottom-5 right-5 z-50">

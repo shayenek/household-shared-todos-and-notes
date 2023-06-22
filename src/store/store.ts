@@ -36,6 +36,16 @@ export const useLayoutStore = create<LayoutState>()((set) => ({
 	setLayout: (layout) => set({ layout }),
 }));
 
+export interface TaskTypeState {
+	taskType: 'note' | 'task' | null;
+	setTaskType: (taskType: 'note' | 'task' | null) => void;
+}
+
+export const useTaskTypeStore = create<TaskTypeState>()((set) => ({
+	taskType: null,
+	setTaskType: (taskType) => set({ taskType }),
+}));
+
 export interface TaskAuthorState {
 	taskAuthor: TaskAuthorType;
 	setTaskAuthor: (taskAuthor: TaskAuthorType) => void;

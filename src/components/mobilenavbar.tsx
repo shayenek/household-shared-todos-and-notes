@@ -1,7 +1,10 @@
+import { Burger } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { deleteCookie } from 'cookies-next';
 import { signOut, useSession } from 'next-auth/react';
+import { useContext } from 'react';
 
+import { AppContext } from '~/providers/appcontext';
 import { type ThemeState, useAuthorizedUserStore, useThemeStore } from '~/store/store';
 import openGlobalModal from '~/utils/modal';
 
@@ -22,6 +25,9 @@ const MobileNavbar = () => {
 		openGlobalModal('addTaskModal', 'Add new item', <TaskForm></TaskForm>, currentTheme);
 	};
 
+	const { sidebarVisible, toggleSidebar } = useContext(AppContext);
+	const label = sidebarVisible ? 'Close navigation' : 'Open navigation';
+
 	return (
 		<div
 			className={`fixed z-50 flex items-center justify-center gap-1 p-4 transition duration-200 ${
@@ -30,6 +36,15 @@ const MobileNavbar = () => {
 					: 'bottom-0 right-0'
 			}`}
 		>
+			<button className="flex h-12 items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
+				<Burger
+					opened={sidebarVisible}
+					onClick={toggleSidebar}
+					aria-label={label}
+					color={currentTheme === 'dark' ? 'white' : '#030910'}
+					className="transition duration-200"
+				/>
+			</button>
 			{sessionData && (
 				<button
 					onClick={openNewTaskModal}

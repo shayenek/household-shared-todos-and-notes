@@ -110,6 +110,8 @@ export const tasksRouter = createTRPCRouter({
 				const combinedStartISOString = combinedStartDateTime.toISOString();
 				const combinedEndISOString = combinedEndDateTime.toISOString();
 
+				console.log('trying to create a calendar event');
+
 				const createEvent = await createCalendarAppointment({
 					id: calendarEventId,
 					start: combinedStartISOString,
@@ -118,6 +120,8 @@ export const tasksRouter = createTRPCRouter({
 					summary: title,
 					description: description,
 				});
+
+				console.log('failed to create a calendar event');
 
 				if (createEvent) {
 					if (createEvent.status === 200) {

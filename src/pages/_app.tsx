@@ -6,6 +6,7 @@ import { type Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
 import { useEffect } from 'react';
 
+import { AppProvider } from '~/providers/appcontext';
 import { useLayoutStore } from '~/store/store';
 import { api } from '~/utils/api';
 
@@ -35,14 +36,16 @@ const MyApp: AppType<{ session: Session | null }> = ({
 	}, []);
 
 	return (
-		<MantineProvider withGlobalStyles withNormalizeCSS>
-			<SessionProvider session={session}>
-				<ModalsProvider>
-					<Component {...pageProps} />
-					<Notifications position="top-right" limit={5} />
-				</ModalsProvider>
-			</SessionProvider>
-		</MantineProvider>
+		<AppProvider>
+			<MantineProvider withGlobalStyles withNormalizeCSS>
+				<SessionProvider session={session}>
+					<ModalsProvider>
+						<Component {...pageProps} />
+						<Notifications position="top-right" limit={5} />
+					</ModalsProvider>
+				</SessionProvider>
+			</MantineProvider>
+		</AppProvider>
 	);
 };
 

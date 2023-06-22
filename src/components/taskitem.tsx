@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import { Loader } from '@mantine/core';
 import { type Task } from '@prisma/client';
-import { IconLink } from '@tabler/icons-react';
+import { IconCalendarTime, IconCalendarOff, IconLink } from '@tabler/icons-react';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import React, { useState, type ReactNode } from 'react';
 
@@ -83,9 +83,11 @@ const TaskDescription: (taskDescription: string) => ReactNode = (taskDescription
 						key={word}
 					>
 						<IconLink size={18} className="mr-1 inline" />
-						<img
+						<Image
 							src={`https://s2.googleusercontent.com/s2/favicons?domain=${word}`}
 							alt={word}
+							width={18}
+							height={18}
 							className="mr-1 inline rounded-sm"
 						/>
 						{word.replace('https://', '').replace('http://', '').replace('www.', '')}
@@ -153,6 +155,8 @@ const TaskElement = ({
 		);
 	};
 
+	const BasicButtonStyling = 'w-16 rounded-lg py-2 text-xs font-bold text-white';
+
 	return (
 		<div
 			className={`relative overflow-hidden rounded-lg p-4 transition duration-200 ease-in-out ${
@@ -168,10 +172,16 @@ const TaskElement = ({
 							{TaskHeader(task.title, handleHashButtonClick, activatedHashFilter)}
 						</div>
 						{task.type === 'task' && (
-							<span className="text-xs">
-								{task.startTime}, {formattedStartDate} - {task.endTime},{' '}
-								{formattedEndDate}
-							</span>
+							<div className="flex shrink-0 flex-col gap-1 text-xs text-[#7c7e82] dark:text-[#7e8083]">
+								<span className="inline-flex items-center gap-1">
+									<IconCalendarTime size="16" />
+									{task.startTime}, {formattedStartDate}
+								</span>
+								<span className="inline-flex items-center gap-1">
+									<IconCalendarOff size="16" />
+									{task.endTime}, {formattedEndDate}
+								</span>
+							</div>
 						)}
 					</div>
 					<hr
@@ -195,14 +205,14 @@ const TaskElement = ({
 				<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
 			)}
 
-			<div className="flex justify-center gap-2">
+			<div className="flex justify-center gap-2 pt-2">
 				{task.type === 'task' && (
 					<>
 						<button
-							className={`w-20 rounded-lg px-4 py-2 text-sm font-bold text-white  ${
+							className={`${BasicButtonStyling} ${
 								task.completed
 									? 'bg-orange-500 hover:bg-orange-600'
-									: 'bg-green-600 hover:bg-green-800'
+									: 'bg-green-700 hover:bg-green-800'
 							}`}
 							onClick={updateTaskStatus}
 						>
@@ -214,7 +224,7 @@ const TaskElement = ({
 					<>
 						<button
 							onClick={openEditTaskModal}
-							className={`w-20 rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800 ${
+							className={`${BasicButtonStyling} bg-blue-500 hover:bg-blue-800 ${
 								deletionInProgress ? 'opacity-50' : 'opacity-100'
 							}`}
 							disabled={deletionInProgress || isBeingDeleted}
@@ -223,7 +233,7 @@ const TaskElement = ({
 						</button>
 						<button
 							onClick={deleteAction}
-							className={`w-20 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-800 ${
+							className={`${BasicButtonStyling} bg-red-500 hover:bg-red-800 ${
 								deletionInProgress ? 'opacity-50' : 'opacity-100'
 							}`}
 							disabled={deletionInProgress || isBeingDeleted}

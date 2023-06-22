@@ -13,11 +13,14 @@ import {
 	useTaskAuthorStore,
 	useLayoutStore,
 	type LayoutState,
+	type TaskTypeState,
+	useTaskTypeStore,
 } from '~/store/store';
-import { type TaskAuthorType } from '~/types/author';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 import { useScrollPosition } from '~/utils/useScrollPosition';
+
+import { ItemTypeMenu } from './itemtypemenu';
 
 const TASKS_LIMIT_PER_PAGE = 8;
 const TASKS_MIN_TO_REFETCH = 5;
@@ -25,7 +28,6 @@ const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
 
 const Tasks = () => {
 	const { data: sessionData } = useSession();
-	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
 	const isMobile = useLayoutStore((state: LayoutState) => state.isMobile);
 
 	const [taskData, setTaskData] = useState<Task[]>([]);
@@ -36,9 +38,10 @@ const Tasks = () => {
 	const [page, setPage] = useState(0);
 
 	const scrollPosition = useScrollPosition();
-	const setTaskAuthor = (author: TaskAuthorType) => {
-		useTaskAuthorStore.setState({ taskAuthor: author });
-	};
+
+	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
+
+	const taskType = useTaskTypeStore((state: TaskTypeState) => state.taskType);
 
 	const {
 		data: allTasksData,
@@ -238,10 +241,14 @@ const Tasks = () => {
 				newTaskData = sortByHash(newTaskData, hashWord);
 			}
 
+			if (taskType) {
+				newTaskData = newTaskData.filter((task) => task.type === taskType);
+			}
+
 			setTaskData(newTaskData);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [allTasksData, taskAuthor, hashWord]);
+	}, [allTasksData, taskAuthor, hashWord, taskType]);
 
 	useSubscribeToEvent((eventName, data: { task: Task }) => {
 		switch (eventName) {
@@ -308,26 +315,7 @@ const Tasks = () => {
 				}`}
 			>
 				<div className="align-center flex justify-between gap-2">
-					{!isMobile && sessionData && (
-						<>
-							<button
-								className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
-									taskAuthor === 'all' ? '!bg-blue-500 text-white' : ''
-								}`}
-								onClick={() => setTaskAuthor('all')}
-							>
-								All
-							</button>
-							<button
-								className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold hover:!bg-blue-500 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
-									taskAuthor === 'mine' ? '!bg-blue-500 text-white' : ''
-								}`}
-								onClick={() => setTaskAuthor('mine')}
-							>
-								Mine
-							</button>
-						</>
-					)}
+					{!isMobile && sessionData && <ItemTypeMenu />}
 				</div>
 				<DragDropContext onDragEnd={onDragEndHandler}>
 					<Droppable droppableId="droppable">

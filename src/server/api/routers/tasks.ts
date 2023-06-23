@@ -96,32 +96,27 @@ export const tasksRouter = createTRPCRouter({
 			if (type === 'task') {
 				if (!calendarEventId) return;
 
-				const [startHours, startMinutes] = startTime.split(':');
-				const [endHours, endMinutes] = endTime.split(':');
-
 				const combinedStartDateTime = new Date(startDate);
-				combinedStartDateTime.setHours(parseInt(startHours || '12'));
-				combinedStartDateTime.setMinutes(parseInt(startMinutes || '00'));
-
 				const combinedEndDateTime = new Date(endDate);
-				combinedEndDateTime.setHours(parseInt(endHours || '12'));
-				combinedEndDateTime.setMinutes(parseInt(endMinutes || '00'));
 
-				const combinedStartISOString = combinedStartDateTime.toISOString();
-				const combinedEndISOString = combinedEndDateTime.toISOString();
+				const combinedStartISOString = combinedStartDateTime.toISOString().replace('Z', '');
+				const combinedStartISOStringParts = combinedStartISOString.split('T');
+				const FinalSTartTime = `${
+					combinedStartISOStringParts[0] || ''
+				}T${startTime}:00.000`;
 
-				console.log('trying to create a calendar event');
+				const combinedEndISOString = combinedEndDateTime.toISOString().replace('Z', '');
+				const combinedEndISOStringParts = combinedEndISOString.split('T');
+				const FinalEndTime = `${combinedEndISOStringParts[0] || ''}T${endTime}:00.000`;
 
 				const createEvent = await createCalendarAppointment({
 					id: calendarEventId,
-					start: combinedStartISOString,
-					end: combinedEndISOString,
+					start: FinalSTartTime,
+					end: FinalEndTime,
 					location: 'Online',
 					summary: title,
 					description: description,
 				});
-
-				console.log('failed to create a calendar event');
 
 				if (createEvent) {
 					if (createEvent.status === 200) {

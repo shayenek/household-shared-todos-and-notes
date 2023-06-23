@@ -100,6 +100,8 @@ const TaskForm = ({ className, task }: { className?: string; task?: Task }) => {
 			<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]" />
 			<form
 				onSubmit={addTaskForm.onSubmit((values) => {
+					console.log(values);
+
 					if (task) {
 						updateTask.mutate({ ...values });
 						return;

@@ -16,9 +16,11 @@ const buildEventBody = ({ id, start, end, summary, description }: EventProps) =>
 		id,
 		start: {
 			dateTime: start,
+			timeZone: 'Europe/Warsaw',
 		},
 		end: {
 			dateTime: end,
+			timeZone: 'Europe/Warsaw',
 		},
 		summary,
 		description,

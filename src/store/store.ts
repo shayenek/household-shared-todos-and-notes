@@ -1,3 +1,4 @@
+import { type Task } from '@prisma/client';
 import { create } from 'zustand';
 
 import { type TaskAuthorType } from '~/types/author';
@@ -74,4 +75,14 @@ export interface ModalAddTaskState {
 export const useModalAddTaskStore = create<ModalAddTaskState>()((set) => ({
 	isOpen: false,
 	setIsOpen: (isOpen) => set({ isOpen }),
+}));
+
+export interface UpdateTaskState {
+	task: Task | null | undefined;
+	setTask: (task: Task | null | undefined) => void;
+}
+
+export const useUpdateTaskStore = create<UpdateTaskState>()((set) => ({
+	task: null,
+	setTask: (task) => set({ task }),
 }));

@@ -15,6 +15,8 @@ import {
 	type LayoutState,
 	type TaskTypeState,
 	useTaskTypeStore,
+	useUpdateTaskStore,
+	type UpdateTaskState,
 } from '~/store/store';
 import { api } from '~/utils/api';
 import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
@@ -28,20 +30,20 @@ const SCROLL_POSITION_TO_FETCH_NEXT_PAGE = 85;
 
 const Tasks = () => {
 	const { data: sessionData } = useSession();
-	const isMobile = useLayoutStore((state: LayoutState) => state.isMobile);
+	const scrollPosition = useScrollPosition();
 
 	const [taskData, setTaskData] = useState<Task[]>([]);
 	const [isBeingDeleted, setIsBeingDeleted] = useState<string | null>(null);
 	const [deletionInProgress, setDeletionInProgress] = useState<boolean>(false);
 	const [hashWord, setHashWord] = useState<string | null>(null);
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const [page, setPage] = useState(0);
+	const [, setPage] = useState(0);
 
-	const scrollPosition = useScrollPosition();
-
+	const isMobile = useLayoutStore((state: LayoutState) => state.isMobile);
 	const taskAuthor = useTaskAuthorStore((state: TaskAuthorState) => state.taskAuthor);
-
 	const taskType = useTaskTypeStore((state: TaskTypeState) => state.taskType);
+	const { task: updatedTask, setTask: setUpdatedTask } = useUpdateTaskStore(
+		(state: UpdateTaskState) => state
+	);
 
 	const {
 		data: allTasksData,
@@ -245,10 +247,17 @@ const Tasks = () => {
 				newTaskData = newTaskData.filter((task) => task.type === taskType);
 			}
 
+			if (updatedTask) {
+				const taskIndex = newTaskData.findIndex((task) => task.id === updatedTask.id);
+				if (taskIndex !== -1) {
+					newTaskData[taskIndex] = updatedTask;
+				}
+			}
+
 			setTaskData(newTaskData);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [allTasksData, taskAuthor, hashWord, taskType]);
+	}, [allTasksData, taskAuthor, hashWord, taskType, updatedTask]);
 
 	useSubscribeToEvent((eventName, data: { task: Task }) => {
 		switch (eventName) {
@@ -256,7 +265,7 @@ const Tasks = () => {
 				allTasksData?.pages[0]?.items.unshift(data.task);
 				setTaskData((prev) => [data.task, ...prev]);
 				break;
-			case 'task-updated':
+			case 'api-task-updated':
 				setTaskData((prev) => {
 					allTasksData?.pages.forEach((page) => {
 						const taskIndex = page.items.findIndex((task) => task.id === data.task.id);
@@ -271,13 +280,13 @@ const Tasks = () => {
 					return newTaskData;
 				});
 				break;
+			case 'task-deleted':
 			case 'api-task-deleted':
 				setTaskData((prev) => {
 					allTasksData?.pages.forEach((page) => {
 						const newPage = page.items.filter((task) => task.id !== data.task.id);
 						page.items = newPage;
 					});
-					console.log('here');
 					const newTaskData = [...prev];
 					const taskIndex = newTaskData.findIndex((task) => task.id === data.task.id);
 					newTaskData.splice(taskIndex, 1);

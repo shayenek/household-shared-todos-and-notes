@@ -36,7 +36,7 @@ const MobileNavbar = () => {
 					: 'bottom-0 right-0'
 			}`}
 		>
-			<button className="flex h-12 items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
+			<div className="flex h-12 items-center justify-center rounded-lg border-2 border-[#ecf0f3] bg-[#ecf0f3] p-2 text-sm text-[#030910] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ">
 				<Burger
 					opened={sidebarVisible}
 					onClick={toggleSidebar}
@@ -44,7 +44,7 @@ const MobileNavbar = () => {
 					color={currentTheme === 'dark' ? 'white' : '#030910'}
 					className="transition duration-200"
 				/>
-			</button>
+			</div>
 			{sessionData && (
 				<button
 					onClick={openNewTaskModal}

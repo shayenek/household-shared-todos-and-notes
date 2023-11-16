@@ -9,9 +9,25 @@ export type EventProps = {
 	summary: string;
 	description: string;
 	location: string;
+	recurrence: string[];
+	reminders: {
+		useDefault: boolean;
+		overrides: {
+			method: 'popup';
+			minutes: number;
+		}[];
+	};
 };
 
-const buildEventBody = ({ id, start, end, summary, description }: EventProps) => {
+const buildEventBody = ({
+	id,
+	start,
+	end,
+	summary,
+	description,
+	recurrence,
+	reminders,
+}: EventProps) => {
 	return {
 		id,
 		start: {
@@ -24,6 +40,8 @@ const buildEventBody = ({ id, start, end, summary, description }: EventProps) =>
 		},
 		summary,
 		description,
+		recurrence,
+		reminders,
 		conferenceData: {
 			createRequest: {
 				requestId: id,
@@ -43,6 +61,8 @@ export const getHash: (data: string) => string = (data) => {
 
 export default async function createCalendarAppointment(props: EventProps) {
 	const body = buildEventBody(props);
+
+	console.log(body);
 
 	const apiUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
 

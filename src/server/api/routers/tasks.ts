@@ -39,11 +39,25 @@ export const tasksRouter = createTRPCRouter({
 				endDate: z.date(),
 				endTime: z.string(),
 				calendarEventId: z.string().optional(),
+				repeat: z.string(),
+				reminders: z.array(z.string()).optional(),
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const { title, description, type, startDate, startTime, endDate, endTime } = input;
-			const calendarEventId = type === 'task' ? getHash(`${title}${description}`) : null;
+			const {
+				title,
+				description,
+				type,
+				startDate,
+				startTime,
+				endDate,
+				endTime,
+				repeat,
+				reminders,
+			} = input;
+			const dateForHash = new Date().toISOString();
+			const calendarEventId =
+				type === 'task' ? getHash(`${title}${description}${dateForHash}`) : null;
 
 			let newTitle = '';
 			if (title.includes('#')) {
@@ -109,6 +123,28 @@ export const tasksRouter = createTRPCRouter({
 				const combinedEndISOStringParts = combinedEndISOString.split('T');
 				const FinalEndTime = `${combinedEndISOStringParts[0] || ''}T${endTime}:00.000`;
 
+				const remindersObject = {
+					useDefault: false as boolean,
+					overrides: [] as { method: 'popup'; minutes: number }[],
+				};
+
+				if (reminders) {
+					if (reminders.includes('none')) {
+						remindersObject.useDefault = false;
+					} else {
+						if (reminders.includes('default')) {
+							remindersObject.useDefault = true;
+						}
+						reminders.forEach((reminder) => {
+							if (reminder === 'default') return;
+							remindersObject.overrides.push({
+								method: 'popup',
+								minutes: parseInt(reminder),
+							});
+						});
+					}
+				}
+
 				const createEvent = await createCalendarAppointment({
 					id: calendarEventId,
 					start: FinalSTartTime,
@@ -116,6 +152,8 @@ export const tasksRouter = createTRPCRouter({
 					location: 'Online',
 					summary: title,
 					description: description,
+					recurrence: repeat !== 'none' ? [repeat] : [],
+					reminders: remindersObject,
 				});
 
 				if (createEvent) {
@@ -124,6 +162,8 @@ export const tasksRouter = createTRPCRouter({
 						return;
 					} else {
 						console.log('Event creation failed');
+						console.log(createEvent.statusText);
+						console.log(createEvent);
 						return;
 					}
 				}
@@ -439,6 +479,51 @@ export const tasksRouter = createTRPCRouter({
 			});
 
 			return taskItem;
+		}),
+	updateTaskPublic: publicProcedure
+		.input(
+			z.object({
+				id: z.string(),
+				title: z.string(),
+				description: z.string(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id, title, description } = input;
+
+			let newTitle = '';
+			if (title.includes('#')) {
+				const taskTitleArray = title.split('#');
+				const firstPart = taskTitleArray[0]?.trim();
+				const hashtags = taskTitleArray.slice(1);
+
+				const modifiedHashtags = hashtags.map((hashtag) => {
+					const trimmedHashtag = hashtag.trim();
+					return '#' + trimmedHashtag + '-[' + wordToRgbColor(trimmedHashtag) + ']';
+				});
+
+				if (firstPart) {
+					newTitle = firstPart + ' ' + modifiedHashtags.join(' ');
+				} else {
+					newTitle = modifiedHashtags.join(' ');
+				}
+			}
+
+			const taskUpdated = await ctx.prisma.task.update({
+				where: {
+					id,
+				},
+				data: {
+					title: newTitle || title,
+					description,
+				},
+			});
+
+			await pusherServerClient.trigger(`user-shayenek`, 'api-task-updated', {
+				task: taskUpdated,
+			});
+
+			return taskUpdated;
 		}),
 
 	deleteTaskPublic: publicProcedure

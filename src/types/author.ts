@@ -1,2 +1,2 @@
 export type TaskAuthorType = 'all' | 'mine' | undefined;
-export type TaskType = 'note' | 'task' | null;
+export type TaskType = 'note' | 'task' | 'shopping' | null;

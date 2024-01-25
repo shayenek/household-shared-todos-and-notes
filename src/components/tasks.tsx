@@ -23,6 +23,7 @@ import { PusherProvider, useSubscribeToEvent } from '~/utils/pusher';
 import { useScrollPosition } from '~/utils/useScrollPosition';
 
 import { ItemTypeMenu } from './itemtypemenu';
+import { ShoppingList } from './shoppinglist/shoppinglist';
 
 const TASKS_LIMIT_PER_PAGE = 8;
 const TASKS_MIN_TO_REFETCH = 5;
@@ -326,72 +327,82 @@ const Tasks = () => {
 				<div className="align-center flex justify-between gap-2">
 					{!isMobile && sessionData && <ItemTypeMenu />}
 				</div>
-				<DragDropContext onDragEnd={onDragEndHandler}>
-					<Droppable droppableId="droppable">
-						{(droppableProvided) => (
-							<div
-								className={`flex flex-col gap-2`}
-								ref={droppableProvided.innerRef}
-								{...droppableProvided.droppableProps}
-							>
-								{taskData?.map((task, index) => (
-									<Draggable draggableId={task.id} key={task.id} index={index}>
-										{(draggableProvided, draggableSnapshot) => (
-											<div
-												{...draggableProvided.draggableProps}
-												{...(isMobile
-													? draggableProvided.dragHandleProps
-													: {})}
-												ref={draggableProvided.innerRef}
-												data-position={task.position}
-												className="relative"
-											>
-												{!isMobile && (
-													<div
-														className="absolute bottom-2 right-2 z-[1]"
-														{...draggableProvided.dragHandleProps}
-													>
-														<IconDragDrop
-															size={20}
-															className="stroke-[#7c7e82] dark:stroke-[#7e8083]"
-														/>
-													</div>
-												)}
-												<TaskElement
-													task={task}
-													deleteAction={() => {
-														handleDeleteTask(task.id);
-													}}
-													updateTaskStatus={() => {
-														updateTaskStatus.mutate({
-															id: task.id,
-															completed: !task.completed,
-														});
-													}}
-													isBeingDeleted={isBeingDeleted === task.id}
-													deletionInProgress={deletionInProgress}
-													handleHashButtonClick={filterByHash}
-													activatedHashFilter={hashWord ? hashWord : ''}
-													className={`${
-														draggableSnapshot.isDragging
-															? 'bg-[#e8e8e8] dark:bg-[#292c2d]'
-															: ''
-													}`}
-												/>
-											</div>
-										)}
-									</Draggable>
-								))}
-								{isFetching && (
-									<div className="flex w-full items-center justify-center py-2">
-										<Loader />
-									</div>
-								)}
-								{droppableProvided.placeholder}
-							</div>
-						)}
-					</Droppable>
-				</DragDropContext>
+				{taskType === 'shopping' ? (
+					<ShoppingList />
+				) : (
+					<DragDropContext onDragEnd={onDragEndHandler}>
+						<Droppable droppableId="droppable">
+							{(droppableProvided) => (
+								<div
+									className={`flex flex-col gap-2`}
+									ref={droppableProvided.innerRef}
+									{...droppableProvided.droppableProps}
+								>
+									{taskData?.map((task, index) => (
+										<Draggable
+											draggableId={task.id}
+											key={task.id}
+											index={index}
+										>
+											{(draggableProvided, draggableSnapshot) => (
+												<div
+													{...draggableProvided.draggableProps}
+													{...(isMobile
+														? draggableProvided.dragHandleProps
+														: {})}
+													ref={draggableProvided.innerRef}
+													data-position={task.position}
+													className="relative"
+												>
+													{!isMobile && (
+														<div
+															className="absolute bottom-2 right-2 z-[1]"
+															{...draggableProvided.dragHandleProps}
+														>
+															<IconDragDrop
+																size={20}
+																className="stroke-[#7c7e82] dark:stroke-[#7e8083]"
+															/>
+														</div>
+													)}
+													<TaskElement
+														task={task}
+														deleteAction={() => {
+															handleDeleteTask(task.id);
+														}}
+														updateTaskStatus={() => {
+															updateTaskStatus.mutate({
+																id: task.id,
+																completed: !task.completed,
+															});
+														}}
+														isBeingDeleted={isBeingDeleted === task.id}
+														deletionInProgress={deletionInProgress}
+														handleHashButtonClick={filterByHash}
+														activatedHashFilter={
+															hashWord ? hashWord : ''
+														}
+														className={`${
+															draggableSnapshot.isDragging
+																? 'bg-[#e8e8e8] dark:bg-[#292c2d]'
+																: ''
+														}`}
+													/>
+												</div>
+											)}
+										</Draggable>
+									))}
+									{isFetching && (
+										<div className="flex w-full items-center justify-center py-2">
+											<Loader />
+										</div>
+									)}
+									{droppableProvided.placeholder}
+								</div>
+							)}
+						</Droppable>
+					</DragDropContext>
+				)}
 			</div>
 		</>
 	);

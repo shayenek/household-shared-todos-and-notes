@@ -38,8 +38,8 @@ export const useLayoutStore = create<LayoutState>()((set) => ({
 }));
 
 export interface TaskTypeState {
-	taskType: 'note' | 'task' | null;
-	setTaskType: (taskType: 'note' | 'task' | null) => void;
+	taskType: 'note' | 'task' | 'shopping' | null;
+	setTaskType: (taskType: 'note' | 'task' | 'shopping' | null) => void;
 }
 
 export const useTaskTypeStore = create<TaskTypeState>()((set) => ({

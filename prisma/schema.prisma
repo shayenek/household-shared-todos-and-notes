@@ -99,3 +99,35 @@ model Codesession {
   sessionToken String   @unique
   expires     DateTime
 }
+
+model ShoppingCategoriesList {
+  id        Int                @id @unique
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  name      String
+  database  ShoppingDataBase[]
+  items     ShoppingItem[]
+}
+
+model ShoppingDataBase {
+  id         Int                    @id @unique
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  name       String
+  location   String?
+  weight     Int                    @default(1)
+  categoryId Int
+  category   ShoppingCategoriesList @relation(fields: [categoryId], references: [id])
+}
+
+model ShoppingItem {
+  id         Int                    @id @unique
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  quantity   Int
+  checked    Boolean                @default(false)
+  categoryId Int
+  location   String?
+  name       String
+  category   ShoppingCategoriesList @relation(fields: [categoryId], references: [id])
+}

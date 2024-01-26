@@ -1,11 +1,12 @@
-import { Select, Button, TextInput, Modal } from '@mantine/core';
+import { Select, Button, TextInput, Popover } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { modals } from '@mantine/modals';
 import {
 	type ShoppingItem,
 	type ShoppingDataBase,
 	type ShoppingCategoriesList,
-	type ShoppingListGroupedByCategory,
 } from '@prisma/client';
+import { IconDots } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { api } from '~/utils/api';
@@ -13,230 +14,256 @@ import { api } from '~/utils/api';
 import { CategoriesModal } from './categoriesmodal';
 import { ShoppingItemEl } from './shoppingitem';
 
-const removeShoppingListItemsFromDatabase: (
-	items: ShoppingItem[],
-	databaseItems: ShoppingDataBase[]
-) => ShoppingDataBase[] = (items, databaseItems) => {
-	const itemsNames = items.map((item) => item.name);
-	const filteredDatabaseItems = databaseItems.filter((item) => !itemsNames.includes(item.name));
-	return filteredDatabaseItems;
-};
+interface ShoppingItemsGrouped {
+	categoryId: number;
+	categoryName: string;
+	items: ShoppingItem[];
+}
 
-const shoppingListGroupedByCategory: (
+const groupByCategory: (
 	list: ShoppingItem[],
 	categoryList: ShoppingCategoriesList[]
-) => ShoppingListGroupedByCategory = (list, categoryList) => {
-	const groupedByCategory = list.reduce((acc, item) => {
-		const category = categoryList.find((category) => category.id === item.categoryId)?.name;
-		if (!category) {
-			return acc;
+) => ShoppingItemsGrouped[] = (list, categoryList) => {
+	const uniqueCategoryIds = new Set<number>();
+
+	return categoryList.reduce((result, category) => {
+		if (!uniqueCategoryIds.has(category.id)) {
+			uniqueCategoryIds.add(category.id);
+
+			const groupedItems: ShoppingItemsGrouped = {
+				categoryId: category.id,
+				categoryName: category.name,
+				items: list.filter((item) => item.categoryId === category.id),
+			};
+
+			if (groupedItems.items.length > 0) {
+				result.push(groupedItems);
+			}
 		}
-		if (!acc[category]) {
-			acc[category] = [];
-		}
-		acc[category]!.push(item);
-		return acc;
-	}, {} as Record<string, ShoppingItem[]>);
-	return groupedByCategory;
+
+		return result;
+	}, [] as ShoppingItemsGrouped[]);
 };
 
 const filterDatabaseItemsByWord = (items: ShoppingDataBase[], word: string, max: number) => {
 	return items.filter((item) => item.name.includes(word)).slice(0, max);
 };
 
-const sortShoppingItemsByDatabaseWeight = (
-	items: ShoppingItem[],
-	databaseItems: ShoppingDataBase[]
-) => {
-	const sortedItems = items.sort((a, b) => {
-		const aWeight = databaseItems.find((item) => item.id === a.id)?.weight;
-		const bWeight = databaseItems.find((item) => item.id === b.id)?.weight;
-		if (aWeight && bWeight) {
-			return bWeight - aWeight;
-		}
-		return 0;
-	});
-	return sortedItems;
+const convertDatabaseItemToShoppingItem = (
+	item: ShoppingDataBase,
+	quantity: string
+): ShoppingItem => {
+	return {
+		id: item.id,
+		name: item.name,
+		quantity: parseInt(quantity || '1', 10),
+		checked: false,
+		categoryId: item.categoryId,
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		location: item.location,
+	};
 };
 
 export const ShoppingList = () => {
-	const [categoriesList, setCategoriesList] = useState<ShoppingCategoriesList[]>([]);
-	const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
-	const [shoppingDatabase, setShoppingDatabase] = useState<ShoppingDataBase[]>([]);
-
-	const [inputVal, setInputVal] = useState('');
+	const [searchItemInputVal, setSearchItemInputVal] = useState('');
 	const [amountValue, setAmountValue] = useState<string | null>('1');
+	const [showDatabaseList, setShowDatabaseList] = useState(false);
 
-	const [filteredDatabaseItems, setFilteredDatabaseItems] = useState<ShoppingDataBase[]>([]);
+	const [categoriesList, setCategoriesList] = useState<ShoppingCategoriesList[]>([]);
 
-	const [, setNewItemSelectedCategory] = useState<ShoppingCategoriesList | null>(null);
+	const [allShoppingDatabaseItems, setAllShoppingDatabaseItems] = useState<ShoppingDataBase[]>(
+		[]
+	);
+	const [shoppingDatabaseItems, setShoppingDatabaseItems] = useState<ShoppingDataBase[]>([]);
+	const [shoppingDatabaseItemsFiltered, setShoppingDatabaseItemsFiltered] = useState<
+		ShoppingDataBase[]
+	>([]);
 
-	const [modalOpened, { open, close }] = useDisclosure(false);
+	const [shoppingListItems, setShoppingListItems] = useState<ShoppingItem[]>([]);
+	const [shoppingItemsGroupedByCategory, setShoppingItemsGroupedByCategory] = useState<
+		ShoppingItemsGrouped[]
+	>([]);
 
 	const itemCategories = api.shoppingDatabase.getCategories.useQuery();
-
 	const allDatabaseItems = api.shoppingDatabase.getAllItems.useQuery();
+	const filteredDatabaseItems = api.shoppingDatabase.getAllItemsWithoutShoppingItems.useQuery();
 	const createDatabaseItem = api.shoppingDatabase.createNewItem.useMutation();
+	const setAllDatabaseItemsWeightToOne =
+		api.shoppingDatabase.setAllItemsWeightToOne.useMutation();
 
-	const allShoppingListItems = api.shoppingList.getAllItems.useQuery();
+	const allShoppingListItemsByWeight =
+		api.shoppingList.getAllShoppingItemsSortedByDatabaseItemsWeight.useQuery();
 	const addItemToShoppingList = api.shoppingList.addItemToList.useMutation();
+	const checkShoppingItem = api.shoppingList.checkItem.useMutation();
+
 	const markAllItemsChecked = api.shoppingList.markAllChecked.useMutation();
 	const clearShoppingListItems = api.shoppingList.clearShoppingList.useMutation();
 
+	const [modalOpened, { open, close }] = useDisclosure(false);
+
 	useEffect(() => {
-		if (allDatabaseItems.data) {
-			setShoppingDatabase(allDatabaseItems.data);
-		}
 		if (itemCategories.data) {
 			setCategoriesList(itemCategories.data);
 		}
-	}, [allDatabaseItems.data, itemCategories.data]);
+	}, [itemCategories.data]);
 
 	useEffect(() => {
-		if (allShoppingListItems.data && allDatabaseItems.data) {
-			setShoppingDatabase(
-				removeShoppingListItemsFromDatabase(
-					allShoppingListItems.data,
-					allDatabaseItems.data
-				)
+		if (allDatabaseItems.data) {
+			setAllShoppingDatabaseItems(allDatabaseItems.data);
+		}
+	}, [allDatabaseItems.data]);
+
+	useEffect(() => {
+		if (allShoppingListItemsByWeight.data) {
+			setShoppingListItems(allShoppingListItemsByWeight.data);
+		}
+	}, [allShoppingListItemsByWeight.data]);
+
+	useEffect(() => {
+		if (shoppingListItems && categoriesList) {
+			setShoppingItemsGroupedByCategory(groupByCategory(shoppingListItems, categoriesList));
+		}
+	}, [shoppingListItems, categoriesList]);
+
+	useEffect(() => {
+		if (filteredDatabaseItems.data) {
+			setShoppingDatabaseItems(filteredDatabaseItems.data);
+		}
+	}, [filteredDatabaseItems.data]);
+
+	useEffect(() => {
+		if (searchItemInputVal.length === 0) {
+			setShowDatabaseList(false);
+		}
+		if (shoppingDatabaseItems) {
+			setShoppingDatabaseItemsFiltered(
+				filterDatabaseItemsByWord(shoppingDatabaseItems, searchItemInputVal, 10)
 			);
-			setShoppingItems(allShoppingListItems.data);
-			// setShoppingItems(
-			// 	sortShoppingItemsByDatabaseWeight(allShoppingListItems.data, allDatabaseItems.data)
-			// );
 		}
-	}, [allShoppingListItems.data, allDatabaseItems.data]);
+	}, [shoppingDatabaseItems, searchItemInputVal]);
 
-	const shoppingItemsSortedByCategory = Object.keys(
-		shoppingListGroupedByCategory(shoppingItems, categoriesList)
-	).map((category) => ({
-		category,
-		items: shoppingListGroupedByCategory(shoppingItems, categoriesList)[category],
-	}));
-
-	// Fuzzy search for input
-	useEffect(() => {
-		if (inputVal.length > 0) {
-			setFilteredDatabaseItems(filterDatabaseItemsByWord(shoppingDatabase, inputVal, 10));
+	const handleSelectItem = (item: ShoppingDataBase, autoSelect?: boolean) => {
+		setSearchItemInputVal(item.name);
+		setShowDatabaseList(false);
+		if (autoSelect) {
+			handleAddItemToShoppingList(item);
 		}
-	}, [inputVal, shoppingDatabase]);
-
-	const handleSelectItem = (item: ShoppingDataBase) => {
-		setInputVal(item.name);
-		setFilteredDatabaseItems([]);
 	};
 
-	const handleSelectItemOnMobile = (item: ShoppingDataBase) => {
-		setInputVal(item.name);
-		setFilteredDatabaseItems([]);
-		addItemToShoppingList.mutate({
-			id: item.id,
-			categoryId: item.categoryId,
-			quantity: parseInt(amountValue || '1'),
-		});
-		const { weight, ...newDatabaseItemWithoutWeight } = item;
-		handleNewShoppingItemAdded({
-			...newDatabaseItemWithoutWeight,
-			checked: false,
-			quantity: parseInt(amountValue || '1'),
-		});
-	};
-
-	const handleInputBlur = () => {
-		setTimeout(() => {
-			setFilteredDatabaseItems([]);
-		}, 200);
-	};
-
-	const handleNewItemCategorySelection = (category: ShoppingCategoriesList) => {
-		setNewItemSelectedCategory(category);
-		const newDatabaseItem: ShoppingDataBase = {
-			id: 0,
-			name: inputVal,
-			categoryId: category.id,
-			weight: 1,
-			location: null,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
-		const { weight, ...newDatabaseItemWithoutWeight } = newDatabaseItem;
-		setShoppingItems([
-			...shoppingItems,
-			{
-				...newDatabaseItemWithoutWeight,
-				checked: false,
-				quantity: parseInt(amountValue || '1'),
-			},
-		]);
-		createDatabaseItem.mutate({
-			createNewShoppingItem: true,
-			dataBaseObject: newDatabaseItem,
-		});
-		handleNewShoppingItemAdded({
-			...newDatabaseItemWithoutWeight,
-			checked: false,
-			quantity: parseInt(amountValue || '1'),
-		});
-		close();
-	};
-
-	const handleNewShoppingItemAdded = (item: ShoppingItem) => {
-		setShoppingItems([...shoppingItems, item]);
-		setInputVal('');
-		setAmountValue('1');
-		setFilteredDatabaseItems([]);
-	};
-
-	const handleItemDeletion = (item: ShoppingItem) => {
-		const updatedShoppingItems = shoppingItems.filter(
-			(shoppingItem) => shoppingItem.id !== item.id
+	const handleAddItemToShoppingList = (item: ShoppingDataBase) => {
+		const newDatabaseItem = { ...item, weight: item.weight + 1 };
+		setShoppingDatabaseItems((prev) =>
+			prev
+				.concat(newDatabaseItem)
+				.filter((i) => i.id !== item.id)
+				.sort((a, b) => b.weight - a.weight)
 		);
-		setShoppingItems(updatedShoppingItems);
+		const newItem = convertDatabaseItemToShoppingItem(item, amountValue || '1');
+		setShoppingListItems((prev) => [...prev, newItem]);
+		setSearchItemInputVal('');
+		setAmountValue('1');
+		addItemToShoppingList.mutate(newItem);
 	};
 
-	const handleItemCheck = (item: ShoppingItem) => {
-		const updatedShoppingItems = shoppingItems.map((shoppingItem) => {
-			if (shoppingItem.id === item.id) {
-				return { ...shoppingItem, checked: !shoppingItem.checked };
-			}
-			return shoppingItem;
-		});
-		setShoppingItems(updatedShoppingItems);
+	const handleItemDeletion = (id: number) => {
+		const deletedItem = allShoppingDatabaseItems.find((item) => item.id === id);
+		const newshoppngDatabaseItems = [...shoppingDatabaseItems, deletedItem as ShoppingDataBase];
+		setShoppingDatabaseItems(newshoppngDatabaseItems.sort((a, b) => b.weight - a.weight));
+		setShoppingListItems((prev) => prev.filter((item) => item.id !== id));
 	};
 
-	// Functional functions (for buttons)
-	const handleNewItem = () => {
-		const item = shoppingDatabase.find((item) => item.name === inputVal);
-		if (inputVal && shoppingDatabase.length > 0 && item) {
-			addItemToShoppingList.mutate({
-				id: item.id,
-				categoryId: item.categoryId,
-				quantity: parseInt(amountValue || '1'),
-			});
-			const { weight, ...newDatabaseItemWithoutWeight } = item;
-			handleNewShoppingItemAdded({
-				...newDatabaseItemWithoutWeight,
-				checked: false,
-				quantity: parseInt(amountValue || '1'),
-			});
-			return;
-		}
-		open();
+	const handleItemCheck = (id: number) => {
+		setShoppingListItems((prev) =>
+			prev.map((item) => {
+				if (item.id === id) {
+					item.checked = !item.checked;
+					checkShoppingItem.mutate({ id, checked: item.checked });
+				}
+				return item;
+			})
+		);
 	};
 
 	const markAllChecked = () => {
-		setShoppingItems(
-			shoppingItems.map((item) => {
-				return { ...item, checked: true };
+		setShoppingListItems((prev) =>
+			prev.map((item) => {
+				item.checked = true;
+				checkShoppingItem.mutate({ id: item.id, checked: item.checked });
+				return item;
 			})
 		);
+
 		markAllItemsChecked.mutate();
 	};
 
+	const handleAddButtonClick = () => {
+		const item = allShoppingDatabaseItems.find((item) => item.name === searchItemInputVal);
+		if (item) {
+			handleAddItemToShoppingList(item);
+		} else {
+			open();
+		}
+	};
+
 	const clearShoppingList = () => {
-		clearShoppingListItems.mutate();
-		setShoppingItems([]);
-		setFilteredDatabaseItems([]);
+		modals.openConfirmModal({
+			title: 'Do you really wanna delete all shopping list items?',
+			styles: {
+				content: {
+					background: '#1d1f20',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+				body: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				header: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				close: {
+					background: '#17181c',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+			},
+			centered: true,
+			labels: { confirm: 'Confirm', cancel: 'Cancel' },
+			onConfirm: () => {
+				setShoppingDatabaseItems(shoppingDatabaseItems.sort((a, b) => b.weight - a.weight));
+				setShoppingListItems([]);
+				clearShoppingListItems.mutate();
+			},
+		});
+	};
+
+	const handleNewItemCategorySelection = (
+		category: ShoppingCategoriesList,
+		refreshCategoriesList: boolean
+	) => {
+		const newDatabaseItem = {
+			name: searchItemInputVal,
+			categoryId: category.id,
+			quantity: parseInt(amountValue || '1'),
+		};
+		createDatabaseItem.mutate(
+			{
+				createNewShoppingItem: false,
+				dataBaseObject: newDatabaseItem,
+			},
+			{
+				onSuccess: (data) => {
+					setShoppingDatabaseItems((prev) => [...prev, data]);
+					handleAddItemToShoppingList(data);
+					if (refreshCategoriesList) {
+						setCategoriesList((prev) => [...prev, category]);
+					}
+					close();
+				},
+			}
+		);
 	};
 
 	return (
@@ -253,57 +280,76 @@ export const ShoppingList = () => {
 						<TextInput
 							placeholder="Nazwa"
 							className="mb-1 w-full"
-							value={inputVal}
+							value={searchItemInputVal}
 							onChange={(event) => {
-								setInputVal(event.currentTarget.value);
+								setSearchItemInputVal(event.currentTarget.value);
 							}}
-							onBlur={handleInputBlur}
-							onMouseDown={() => {
+							onClick={() => {
+								setShowDatabaseList((prev) => !prev);
+							}}
+							onBlur={() => {
 								setTimeout(() => {
-									setFilteredDatabaseItems([]);
+									setShowDatabaseList(false);
 								}, 200);
 							}}
-						/>
-						<div className="absolute flex w-full flex-col overflow-hidden rounded-md">
-							{filteredDatabaseItems.map((item) => (
-								<>
+							onMouseDown={() => {
+								setTimeout(() => {
+									setShowDatabaseList(true);
+								}, 200);
+							}}
+							rightSection={
+								searchItemInputVal.length > 0 && (
 									<div
-										key={item.id}
-										className="flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910]"
-										onClick={() => {
-											console.log('chuj');
-											handleSelectItem(item);
-										}}
-										onKeyDown={() => {
-											console.log('chuj1');
-											handleSelectItem(item);
-										}}
-										onTouchEnd={() => {
-											console.log('chuj2');
-											handleSelectItemOnMobile(item);
-										}}
+										className="cursor-pointer text-blue-700"
+										onClick={() => setSearchItemInputVal('')}
+										onKeyDown={() => setSearchItemInputVal('')}
 										role="button"
 										tabIndex={0}
 									>
-										<div className="flex items-center justify-between">
-											<span className="text-base">
-												{item.name.charAt(0).toUpperCase() +
-													item.name.slice(1)}
-											</span>
-											<span className="text-xs">
-												{
-													categoriesList.find(
-														(category) =>
-															category.id === item.categoryId
-													)?.name
-												}
-											</span>
-										</div>
+										X
 									</div>
-									<hr className="border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
-								</>
-							))}
-						</div>
+								)
+							}
+						/>
+						{showDatabaseList && (
+							<div className="absolute flex w-full flex-col overflow-hidden rounded-md">
+								{shoppingDatabaseItemsFiltered.map((item) => (
+									<>
+										<div
+											key={item.id}
+											className="flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910]"
+											onClick={() => {
+												handleSelectItem(item);
+											}}
+											onKeyDown={() => {
+												handleSelectItem(item);
+											}}
+											onTouchEnd={() => {
+												handleSelectItem(item, true);
+											}}
+											role="button"
+											tabIndex={0}
+										>
+											<div className="flex items-center justify-between">
+												<span className="text-base">
+													{item.name.charAt(0).toUpperCase() +
+														item.name.slice(1)}
+												</span>
+												<span className="text-xs">
+													{
+														categoriesList.find(
+															(category) =>
+																category.id === item.categoryId
+														)?.name
+													}
+												</span>
+											</div>
+										</div>
+										<hr className="border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
+									</>
+								))}
+							</div>
+						)}
 					</div>
 					<Select
 						data={[
@@ -339,31 +385,31 @@ export const ShoppingList = () => {
 					/>
 					<Button
 						onClick={() => {
-							handleNewItem();
+							handleAddButtonClick();
 						}}
-						disabled={!inputVal}
+						disabled={!searchItemInputVal}
 					>
 						Dodaj
 					</Button>
 				</div>
 				<div className="flex flex-col">
-					{shoppingItemsSortedByCategory.map((category) => (
-						<div key={category.category} className="flex flex-col">
+					{shoppingItemsGroupedByCategory.map((group) => (
+						<div key={group.categoryId} className="flex flex-col">
 							<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 							<div className="flex items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
 								<span className="text-sm md:text-lg">
-									{category.category.charAt(0).toUpperCase() +
-										category.category.slice(1)}
+									{group.categoryName.charAt(0).toUpperCase() +
+										group.categoryName.slice(1)}
 								</span>
 							</div>
 							<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
-							{category.items &&
-								category.items.map((item) => (
+							{group.items &&
+								group.items.map((item) => (
 									<ShoppingItemEl
-										key={item.id}
+										key={`${item.name}shopping`}
 										item={item}
-										onItemDeletion={() => handleItemDeletion(item)}
-										onItemCheck={() => handleItemCheck(item)}
+										onItemDeletion={() => handleItemDeletion(item.id)}
+										onItemCheck={() => handleItemCheck(item.id)}
 									/>
 								))}
 						</div>
@@ -383,14 +429,29 @@ export const ShoppingList = () => {
 					>
 						Clear list
 					</button>
+					<Popover width={300} trapFocus position="bottom" withArrow shadow="md">
+						<Popover.Target>
+							<button className="rounded-lg bg-gray-500 px-2 py-2 text-sm font-bold text-white opacity-100 hover:bg-gray-800">
+								<IconDots size="1.5rem" />
+							</button>
+						</Popover.Target>
+						<Popover.Dropdown>
+							<button
+								className="w-full rounded-lg bg-gray-500 py-2 text-sm font-bold text-white opacity-100 hover:bg-gray-800"
+								onClick={() => void setAllDatabaseItemsWeightToOne.mutate()}
+							>
+								Set all weight to 1
+							</button>
+						</Popover.Dropdown>
+					</Popover>
 				</div>
 			</div>
-			{/* <CategoriesModal
+			<CategoriesModal
 				categoriesList={categoriesList}
 				onCategorySelection={handleNewItemCategorySelection}
 				modalOpened={modalOpened}
 				closeModal={close}
-			/> */}
+			/>
 		</>
 	);
 };

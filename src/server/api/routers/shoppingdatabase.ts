@@ -1,3 +1,4 @@
+import { type ShoppingItem } from '@prisma/client';
 import { z } from 'zod';
 
 import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
@@ -56,18 +57,32 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 
 		return allItems;
 	}),
+	getAllItemsWithoutShoppingItems: protectedProcedure.query(async ({ ctx }) => {
+		const shoppingItems = await ctx.prisma.shoppingItem.findMany();
+
+		const shoppingItemsIds = shoppingItems.map((item) => item.id);
+
+		const allItems = await ctx.prisma.shoppingDataBase.findMany({
+			where: {
+				id: {
+					notIn: shoppingItemsIds,
+				},
+			},
+			orderBy: {
+				weight: 'desc',
+			},
+		});
+
+		return allItems;
+	}),
 	createNewItem: protectedProcedure
 		.input(
 			z.object({
 				createNewShoppingItem: z.boolean(),
 				dataBaseObject: z.object({
-					id: z.number(),
 					name: z.string(),
 					categoryId: z.number(),
-					location: z.nullable(z.string()),
-					createdAt: z.date(),
-					updatedAt: z.date(),
-					weight: z.nullable(z.number()),
+					quantity: z.number(),
 				}),
 			})
 		)
@@ -85,9 +100,9 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 					id: newItemId,
 					name: input.dataBaseObject.name,
 					categoryId: input.dataBaseObject.categoryId,
-					location: input.dataBaseObject.location,
-					createdAt: input.dataBaseObject.createdAt,
-					updatedAt: input.dataBaseObject.updatedAt,
+					location: null,
+					createdAt: new Date(),
+					updatedAt: new Date(),
 					weight: 1,
 				},
 			});
@@ -97,7 +112,7 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 					data: {
 						id: newItemId,
 						name: input.dataBaseObject.name,
-						quantity: 1,
+						quantity: input.dataBaseObject.quantity,
 						categoryId: input.dataBaseObject.categoryId,
 						checked: false,
 					},
@@ -127,15 +142,61 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 
 			return item;
 		}),
+	setAllItemsWeightToOne: protectedProcedure.mutation(async ({ ctx }) => {
+		const allItems = await ctx.prisma.shoppingDataBase.findMany();
+
+		const updatedItems = allItems.map((item) => {
+			return ctx.prisma.shoppingDataBase.update({
+				where: {
+					id: item.id,
+				},
+				data: {
+					weight: 1,
+				},
+			});
+		});
+
+		await Promise.all(updatedItems);
+
+		return true;
+	}),
 });
 
 export const shoppingListRouter = createTRPCRouter({
+	getAllItems: protectedProcedure.query(async ({ ctx }) => {
+		const allItems = await ctx.prisma.shoppingItem.findMany({
+			orderBy: {
+				createdAt: 'asc',
+			},
+		});
+
+		return allItems;
+	}),
+	getAllShoppingItemsSortedByDatabaseItemsWeight: protectedProcedure.query(async ({ ctx }) => {
+		const allShoppingItems = await ctx.prisma.shoppingItem.findMany({
+			orderBy: {
+				createdAt: 'asc',
+			},
+		});
+
+		const allDatabaseItems = await ctx.prisma.shoppingDataBase.findMany();
+
+		const sortedItems = allShoppingItems.sort((a, b) => {
+			const aWeight = allDatabaseItems.find((item) => item.id === a.id)?.weight;
+			const bWeight = allDatabaseItems.find((item) => item.id === b.id)?.weight;
+			if (aWeight && bWeight) {
+				return bWeight - aWeight;
+			}
+			return 0;
+		});
+
+		return sortedItems;
+	}),
 	addItemToList: protectedProcedure
 		.input(
 			z.object({
 				id: z.number(),
 				quantity: z.number(),
-				categoryId: z.number(),
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
@@ -156,7 +217,7 @@ export const shoppingListRouter = createTRPCRouter({
 					id: itemId,
 					name: item.name,
 					quantity: input.quantity,
-					categoryId: input.categoryId,
+					categoryId: item.categoryId,
 					checked: false,
 				},
 			});
@@ -172,15 +233,6 @@ export const shoppingListRouter = createTRPCRouter({
 
 			return updateWeight;
 		}),
-	getAllItems: protectedProcedure.query(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingItem.findMany({
-			orderBy: {
-				createdAt: 'asc',
-			},
-		});
-
-		return allItems;
-	}),
 	checkItem: protectedProcedure
 		.input(
 			z.object({

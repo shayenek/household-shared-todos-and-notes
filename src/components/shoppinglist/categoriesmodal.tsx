@@ -11,7 +11,7 @@ export const CategoriesModal = ({
 	closeModal,
 }: {
 	categoriesList: ShoppingCategoriesList[];
-	onCategorySelection: (category: ShoppingCategoriesList) => void;
+	onCategorySelection: (category: ShoppingCategoriesList, refreshCategoriesList: boolean) => void;
 	modalOpened: boolean;
 	closeModal: () => void;
 }) => {
@@ -25,8 +25,7 @@ export const CategoriesModal = ({
 			},
 			{
 				onSuccess: (data) => {
-					console.log('chuj');
-					onCategorySelection(data);
+					onCategorySelection(data, true);
 					setInputVal('');
 				},
 			}
@@ -55,8 +54,8 @@ export const CategoriesModal = ({
 				<>
 					<div
 						key={category.name}
-						onClick={() => onCategorySelection(category)}
-						onKeyDown={() => onCategorySelection(category)}
+						onClick={() => onCategorySelection(category, false)}
+						onKeyDown={() => onCategorySelection(category, false)}
 						role="button"
 						tabIndex={0}
 						className="flex cursor-pointer py-1 hover:!bg-gray-200"

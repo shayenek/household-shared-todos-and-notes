@@ -135,7 +135,10 @@ export const ShoppingList = () => {
 	useEffect(() => {
 		if (searchItemInputVal.length === 0) {
 			setShowDatabaseList(false);
+		} else {
+			setShowDatabaseList(true);
 		}
+
 		if (shoppingDatabaseItems) {
 			setShoppingDatabaseItemsFiltered(
 				filterDatabaseItemsByWord(shoppingDatabaseItems, searchItemInputVal, 10)
@@ -282,7 +285,7 @@ export const ShoppingList = () => {
 							className="mb-1 w-full"
 							value={searchItemInputVal}
 							onChange={(event) => {
-								setSearchItemInputVal(event.currentTarget.value);
+								setSearchItemInputVal(event.currentTarget.value.toLowerCase());
 							}}
 							onClick={() => {
 								setShowDatabaseList((prev) => !prev);
@@ -290,12 +293,12 @@ export const ShoppingList = () => {
 							onBlur={() => {
 								setTimeout(() => {
 									setShowDatabaseList(false);
-								}, 200);
+								}, 100);
 							}}
 							onMouseDown={() => {
 								setTimeout(() => {
 									setShowDatabaseList(true);
-								}, 200);
+								}, 100);
 							}}
 							rightSection={
 								searchItemInputVal.length > 0 && (
@@ -318,14 +321,17 @@ export const ShoppingList = () => {
 										<div
 											key={item.id}
 											className="flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910]"
-											onClick={() => {
+											onClick={(e) => {
 												handleSelectItem(item);
+												e.stopPropagation();
 											}}
-											onKeyDown={() => {
+											onKeyDown={(e) => {
 												handleSelectItem(item);
+												e.stopPropagation();
 											}}
-											onTouchEnd={() => {
+											onTouchEnd={(e) => {
 												handleSelectItem(item, true);
+												e.stopPropagation();
 											}}
 											role="button"
 											tabIndex={0}

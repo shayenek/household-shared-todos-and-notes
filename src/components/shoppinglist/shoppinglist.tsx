@@ -292,13 +292,15 @@ export const ShoppingList = () => {
 							}}
 							onBlur={() => {
 								setTimeout(() => {
-									setShowDatabaseList(false);
-								}, 100);
+									if (searchItemInputVal.length === 0) {
+										setShowDatabaseList(false);
+									}
+								}, 300);
 							}}
 							onMouseDown={() => {
 								setTimeout(() => {
 									setShowDatabaseList(true);
-								}, 100);
+								}, 200);
 							}}
 							rightSection={
 								searchItemInputVal.length > 0 && (
@@ -315,23 +317,20 @@ export const ShoppingList = () => {
 							}
 						/>
 						{showDatabaseList && (
-							<div className="absolute flex w-full flex-col overflow-hidden rounded-md">
+							<div className="absolute z-50 flex w-full flex-col overflow-hidden rounded-md">
 								{shoppingDatabaseItemsFiltered.map((item) => (
 									<>
 										<div
 											key={item.id}
 											className="flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910]"
-											onClick={(e) => {
+											onClick={() => {
 												handleSelectItem(item);
-												e.stopPropagation();
 											}}
-											onKeyDown={(e) => {
+											onKeyDown={() => {
 												handleSelectItem(item);
-												e.stopPropagation();
 											}}
-											onTouchEnd={(e) => {
+											onTouchEnd={() => {
 												handleSelectItem(item, true);
-												e.stopPropagation();
 											}}
 											role="button"
 											tabIndex={0}

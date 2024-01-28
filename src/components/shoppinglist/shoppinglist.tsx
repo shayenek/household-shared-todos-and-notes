@@ -1,4 +1,4 @@
-import { Select, Button, TextInput, Popover } from '@mantine/core';
+import { Select, Button, TextInput, Popover, Loader } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import {
@@ -66,6 +66,7 @@ const convertDatabaseItemToShoppingItem = (
 };
 
 export const ShoppingList = () => {
+	const [isLoading, setIsLoading] = useState(true);
 	const [searchItemInputVal, setSearchItemInputVal] = useState('');
 	const [amountValue, setAmountValue] = useState<string | null>('1');
 	const [showDatabaseList, setShowDatabaseList] = useState(false);
@@ -104,6 +105,16 @@ export const ShoppingList = () => {
 	const [modalOpened, { open, close }] = useDisclosure(false);
 
 	useEffect(() => {
+		if (window.localStorage.getItem('shoppingListItems')) {
+			setShoppingItemsGroupedByCategory(
+				JSON.parse(
+					window.localStorage.getItem('shoppingListItems') as string
+				) as ShoppingItemsGrouped[]
+			);
+		}
+	}, []);
+
+	useEffect(() => {
 		if (itemCategories.data) {
 			setCategoriesList(itemCategories.data);
 		}
@@ -124,6 +135,11 @@ export const ShoppingList = () => {
 	useEffect(() => {
 		if (shoppingListItems && categoriesList) {
 			setShoppingItemsGroupedByCategory(groupByCategory(shoppingListItems, categoriesList));
+			window.localStorage.setItem(
+				'shoppingListItems',
+				JSON.stringify(groupByCategory(shoppingListItems, categoriesList))
+			);
+			setIsLoading(false);
 		}
 	}, [shoppingListItems, categoriesList]);
 
@@ -403,8 +419,18 @@ export const ShoppingList = () => {
 					</Button>
 				</div>
 				<div className="flex flex-col">
+					{isLoading && (
+						<div className="flex items-center justify-center p-10">
+							<Loader color="blue" size="xl" />
+						</div>
+					)}
 					{shoppingItemsGroupedByCategory.map((group) => (
-						<div key={group.categoryId} className="flex flex-col">
+						<div
+							key={group.categoryId}
+							className={`flex flex-col ${
+								clicksOnListBlocked ? 'pointer-events-none' : ''
+							}`}
+						>
 							<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 							<div className="flex items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
 								<span className="text-sm md:text-lg">
@@ -420,7 +446,6 @@ export const ShoppingList = () => {
 										item={item}
 										onItemDeletion={() => handleItemDeletion(item.id)}
 										onItemCheck={() => handleItemCheck(item.id)}
-										className={clicksOnListBlocked ? 'pointer-events-none' : ''}
 									/>
 								))}
 						</div>

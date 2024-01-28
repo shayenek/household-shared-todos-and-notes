@@ -5,10 +5,12 @@ import React, { useEffect, useState } from 'react';
 import { api } from '~/utils/api';
 
 export const ShoppingItemEl = ({
+	className,
 	item,
 	onItemDeletion,
 	onItemCheck,
 }: {
+	className?: string;
 	item: ShoppingItem;
 	onItemDeletion: () => void;
 	onItemCheck: () => void;
@@ -33,7 +35,11 @@ export const ShoppingItemEl = ({
 	}, [item.checked]);
 
 	return (
-		<div className="my-1 flex cursor-pointer items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527]">
+		<div
+			className={`my-1 flex cursor-pointer items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527] ${
+				className ?? ''
+			}`}
+		>
 			<div
 				className="flex w-full items-center justify-between"
 				onClick={() => handleCheck()}

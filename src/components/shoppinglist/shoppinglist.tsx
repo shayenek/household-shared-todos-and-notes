@@ -69,6 +69,7 @@ export const ShoppingList = () => {
 	const [searchItemInputVal, setSearchItemInputVal] = useState('');
 	const [amountValue, setAmountValue] = useState<string | null>('1');
 	const [showDatabaseList, setShowDatabaseList] = useState(false);
+	const [clicksOnListBlocked, setClicksOnListBlocked] = useState(false);
 
 	const [categoriesList, setCategoriesList] = useState<ShoppingCategoriesList[]>([]);
 
@@ -152,6 +153,9 @@ export const ShoppingList = () => {
 		if (autoSelect) {
 			handleAddItemToShoppingList(item);
 		}
+		setTimeout(() => {
+			setClicksOnListBlocked(false);
+		}, 500);
 	};
 
 	const handleAddItemToShoppingList = (item: ShoppingDataBase) => {
@@ -289,17 +293,18 @@ export const ShoppingList = () => {
 							}}
 							onClick={() => {
 								setShowDatabaseList((prev) => !prev);
+								setClicksOnListBlocked(true);
 							}}
 							onBlur={() => {
 								setTimeout(() => {
-									if (searchItemInputVal.length === 0) {
-										setShowDatabaseList(false);
-									}
-								}, 300);
+									setShowDatabaseList(false);
+									setClicksOnListBlocked(false);
+								}, 200);
 							}}
 							onMouseDown={() => {
 								setTimeout(() => {
 									setShowDatabaseList(true);
+									setClicksOnListBlocked(true);
 								}, 200);
 							}}
 							rightSection={
@@ -415,6 +420,7 @@ export const ShoppingList = () => {
 										item={item}
 										onItemDeletion={() => handleItemDeletion(item.id)}
 										onItemCheck={() => handleItemCheck(item.id)}
+										className={clicksOnListBlocked ? 'pointer-events-none' : ''}
 									/>
 								))}
 						</div>

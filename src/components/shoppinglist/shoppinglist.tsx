@@ -135,11 +135,6 @@ export const ShoppingList = () => {
 	useEffect(() => {
 		if (shoppingListItems && categoriesList) {
 			setShoppingItemsGroupedByCategory(groupByCategory(shoppingListItems, categoriesList));
-			window.localStorage.setItem(
-				'shoppingListItems',
-				JSON.stringify(groupByCategory(shoppingListItems, categoriesList))
-			);
-			setIsLoading(false);
 		}
 	}, [shoppingListItems, categoriesList]);
 
@@ -162,6 +157,16 @@ export const ShoppingList = () => {
 			);
 		}
 	}, [shoppingDatabaseItems, searchItemInputVal]);
+
+	useEffect(() => {
+		if (shoppingItemsGroupedByCategory.length > 0) {
+			window.localStorage.setItem(
+				'shoppingListItems',
+				JSON.stringify(shoppingItemsGroupedByCategory)
+			);
+			setIsLoading(false);
+		}
+	}, [shoppingItemsGroupedByCategory]);
 
 	const handleSelectItem = (item: ShoppingDataBase, autoSelect?: boolean) => {
 		setSearchItemInputVal(item.name);

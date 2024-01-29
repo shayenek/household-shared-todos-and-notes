@@ -46,10 +46,10 @@ export const CategoriesWindow = ({
 
 	useEffect(() => {
 		const filteredCategories = categoriesList
-			.filter((category) => category.name.includes(inputVal))
+			.filter((category) => category.name.toLowerCase().includes(inputVal.toLowerCase()))
 			.sort((a, b) => {
-				const aStartsWithInputVal = a.name.startsWith(inputVal);
-				const bStartsWithInputVal = b.name.startsWith(inputVal);
+				const aStartsWithInputVal = a.name.toLowerCase().startsWith(inputVal.toLowerCase());
+				const bStartsWithInputVal = b.name.toLowerCase().startsWith(inputVal.toLowerCase());
 
 				if (aStartsWithInputVal && !bStartsWithInputVal) {
 					return -1;

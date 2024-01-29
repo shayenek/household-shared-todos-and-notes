@@ -1,5 +1,4 @@
 import { Select, Button, TextInput, Popover, Loader } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import {
 	type ShoppingItem,
@@ -9,11 +8,8 @@ import {
 import { IconDots } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
-import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
-import openGlobalModal from '~/utils/modal';
 
-import { CategoriesModal } from './categoriesmodal';
 import { CategoriesWindow } from './categorieswindow';
 import { ShoppingItemEl } from './shoppingitem';
 
@@ -49,7 +45,24 @@ const groupByCategory: (
 };
 
 const filterDatabaseItemsByWord = (items: ShoppingDataBase[], word: string, max: number) => {
-	return items.filter((item) => item.name.includes(word)).slice(0, max);
+	if (word.length === 0) {
+		return items.slice(0, max);
+	}
+	return items
+		.filter((item) => item.name.toLowerCase().includes(word.toLowerCase()))
+		.sort((a, b) => {
+			const aStartsWithInputVal = a.name.toLowerCase().startsWith(word.toLowerCase());
+			const bStartsWithInputVal = b.name.toLowerCase().startsWith(word.toLowerCase());
+
+			if (aStartsWithInputVal && !bStartsWithInputVal) {
+				return -1;
+			} else if (!aStartsWithInputVal && bStartsWithInputVal) {
+				return 1;
+			} else {
+				return a.name.localeCompare(b.name);
+			}
+		})
+		.slice(0, max);
 };
 
 const convertDatabaseItemToShoppingItem = (
@@ -71,6 +84,7 @@ const convertDatabaseItemToShoppingItem = (
 export const ShoppingList = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [searchItemInputVal, setSearchItemInputVal] = useState('');
+	const [selectedItem, setSelectedItem] = useState<ShoppingDataBase | null>(null);
 	const [amountValue, setAmountValue] = useState<string | null>('1');
 	const [showDatabaseList, setShowDatabaseList] = useState(false);
 	const [clicksOnListBlocked, setClicksOnListBlocked] = useState(false);
@@ -155,7 +169,11 @@ export const ShoppingList = () => {
 
 		if (shoppingDatabaseItems) {
 			setShoppingDatabaseItemsFiltered(
-				filterDatabaseItemsByWord(shoppingDatabaseItems, searchItemInputVal, 10)
+				filterDatabaseItemsByWord(
+					shoppingDatabaseItems,
+					searchItemInputVal.toLowerCase(),
+					10
+				)
 			);
 		}
 	}, [shoppingDatabaseItems, searchItemInputVal]);
@@ -169,6 +187,53 @@ export const ShoppingList = () => {
 			setIsLoading(false);
 		}
 	}, [shoppingItemsGroupedByCategory]);
+
+	useEffect(() => {
+		if (searchItemInputVal !== '' && shoppingDatabaseItemsFiltered.length > 0) {
+			setSelectedItem(shoppingDatabaseItemsFiltered[0] ?? null);
+		} else {
+			setSelectedItem(null);
+		}
+	}, [searchItemInputVal, shoppingDatabaseItemsFiltered]);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Enter' && selectedItem) {
+				handleAddItemToShoppingList(selectedItem);
+			} else {
+				const index = shoppingDatabaseItemsFiltered.findIndex(
+					(item) => item.name === selectedItem?.name
+				);
+				if (event.key === 'ArrowUp') {
+					if (index === 0) {
+						setSelectedItem(
+							shoppingDatabaseItemsFiltered[
+								shoppingDatabaseItemsFiltered.length - 1
+							] ?? null
+						);
+					} else {
+						setSelectedItem(shoppingDatabaseItemsFiltered[index - 1] ?? null);
+					}
+				} else if (event.key === 'ArrowDown') {
+					if (index === shoppingDatabaseItemsFiltered.length - 1) {
+						setSelectedItem(shoppingDatabaseItemsFiltered[0] ?? null);
+					} else {
+						setSelectedItem(shoppingDatabaseItemsFiltered[index + 1] ?? null);
+					}
+				}
+			}
+		};
+
+		if (showDatabaseList) {
+			document.body.addEventListener('keydown', handleKeyDown);
+		} else {
+			document.body.removeEventListener('keydown', handleKeyDown);
+		}
+
+		return () => {
+			document.body.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [selectedItem, shoppingDatabaseItemsFiltered]);
 
 	const handleSelectItem = (item: ShoppingDataBase, autoSelect?: boolean) => {
 		setSearchItemInputVal(item.name);
@@ -228,11 +293,12 @@ export const ShoppingList = () => {
 	};
 
 	const handleAddButtonClick = () => {
-		const item = allShoppingDatabaseItems.find((item) => item.name === searchItemInputVal);
+		const item = allShoppingDatabaseItems.find(
+			(item) => item.name.toLowerCase() === searchItemInputVal.toLowerCase()
+		);
 		if (item) {
 			handleAddItemToShoppingList(item);
 		} else {
-			// open();
 			setIsCategoriesModalOpen(true);
 		}
 	};
@@ -274,7 +340,6 @@ export const ShoppingList = () => {
 		category: ShoppingCategoriesList,
 		refreshCategoriesList: boolean
 	) => {
-		setIsCategoriesModalOpen(false);
 		const newDatabaseItem = {
 			name: searchItemInputVal,
 			categoryId: category.id,
@@ -292,6 +357,7 @@ export const ShoppingList = () => {
 					if (refreshCategoriesList) {
 						setCategoriesList((prev) => [...prev, category]);
 					}
+					setIsCategoriesModalOpen(false);
 				},
 			}
 		);
@@ -313,7 +379,7 @@ export const ShoppingList = () => {
 							className="mb-1 w-full"
 							value={searchItemInputVal}
 							onChange={(event) => {
-								setSearchItemInputVal(event.currentTarget.value.toLowerCase());
+								setSearchItemInputVal(event.currentTarget.value);
 							}}
 							onClick={() => {
 								setShowDatabaseList((prev) => !prev);
@@ -330,6 +396,11 @@ export const ShoppingList = () => {
 									setShowDatabaseList(true);
 									setClicksOnListBlocked(true);
 								}, 200);
+							}}
+							onSubmitCapture={() => {
+								if (selectedItem) {
+									handleAddItemToShoppingList(selectedItem);
+								}
 							}}
 							rightSection={
 								searchItemInputVal.length > 0 && (
@@ -351,7 +422,9 @@ export const ShoppingList = () => {
 									<>
 										<div
 											key={item.id}
-											className="flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910]"
+											className={`flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910] ${
+												selectedItem?.id === item.id ? '!bg-gray-200' : ''
+											}`}
 											onClick={() => {
 												handleSelectItem(item);
 											}}

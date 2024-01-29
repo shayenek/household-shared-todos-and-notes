@@ -117,6 +117,7 @@ export const CategoriesWindow = ({
 						className="w-full"
 						value={inputVal}
 						onChange={(e) => setInputVal(e.currentTarget.value)}
+						onSubmitCapture={() => handleNewCategory()}
 					/>
 					<Button
 						variant="outline"

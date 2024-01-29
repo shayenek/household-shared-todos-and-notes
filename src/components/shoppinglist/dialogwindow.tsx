@@ -52,7 +52,7 @@ export const DialogWindow = ({
 	return (
 		<div
 			ref={modalRef}
-			className={`customDialog fixed inset-0 z-50 flex items-center justify-center ${
+			className={`customDialog fixed inset-0 z-50 flex items-start justify-center pt-32 ${
 				isModalOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
 			}`}
 		>
@@ -69,7 +69,7 @@ export const DialogWindow = ({
 					{header && <div className="modal-header">{header}</div>}
 					{hasCloseButton && (
 						<button
-							className="modal-close-btn rounded-sm bg-gray-200 p-2 font-bold hover:bg-gray-300"
+							className="modal-close-btn ml-4 rounded-sm bg-gray-200 p-2 font-bold hover:bg-gray-300"
 							onClick={handleCloseModal}
 						>
 							X

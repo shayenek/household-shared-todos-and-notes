@@ -2,13 +2,13 @@ import { modals } from '@mantine/modals';
 
 const openGlobalModal = (
 	modalId: string,
-	title: string,
+	title: string | React.ReactNode | null,
 	children: React.ReactNode,
 	currentTheme: string
 ) => {
 	modals.open({
 		modalId: modalId,
-		title: title,
+		title: title ? title : null,
 		className: currentTheme,
 		styles: {
 			title: {

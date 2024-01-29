@@ -9,9 +9,12 @@ import {
 import { IconDots } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
+import { type ThemeState, useThemeStore } from '~/store/store';
 import { api } from '~/utils/api';
+import openGlobalModal from '~/utils/modal';
 
 import { CategoriesModal } from './categoriesmodal';
+import { CategoriesWindow } from './categorieswindow';
 import { ShoppingItemEl } from './shoppingitem';
 
 interface ShoppingItemsGrouped {
@@ -73,6 +76,7 @@ export const ShoppingList = () => {
 	const [clicksOnListBlocked, setClicksOnListBlocked] = useState(false);
 
 	const [categoriesList, setCategoriesList] = useState<ShoppingCategoriesList[]>([]);
+	const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
 
 	const [allShoppingDatabaseItems, setAllShoppingDatabaseItems] = useState<ShoppingDataBase[]>(
 		[]
@@ -101,8 +105,6 @@ export const ShoppingList = () => {
 
 	const markAllItemsChecked = api.shoppingList.markAllChecked.useMutation();
 	const clearShoppingListItems = api.shoppingList.clearShoppingList.useMutation();
-
-	const [modalOpened, { open, close }] = useDisclosure(false);
 
 	useEffect(() => {
 		if (window.localStorage.getItem('shoppingListItems')) {
@@ -230,7 +232,8 @@ export const ShoppingList = () => {
 		if (item) {
 			handleAddItemToShoppingList(item);
 		} else {
-			open();
+			// open();
+			setIsCategoriesModalOpen(true);
 		}
 	};
 
@@ -271,6 +274,7 @@ export const ShoppingList = () => {
 		category: ShoppingCategoriesList,
 		refreshCategoriesList: boolean
 	) => {
+		setIsCategoriesModalOpen(false);
 		const newDatabaseItem = {
 			name: searchItemInputVal,
 			categoryId: category.id,
@@ -288,7 +292,6 @@ export const ShoppingList = () => {
 					if (refreshCategoriesList) {
 						setCategoriesList((prev) => [...prev, category]);
 					}
-					close();
 				},
 			}
 		);
@@ -486,13 +489,19 @@ export const ShoppingList = () => {
 						</Popover.Dropdown>
 					</Popover>
 				</div>
-			</div>
-			<CategoriesModal
+				<CategoriesWindow
+					isOpen={isCategoriesModalOpen}
+					onClose={() => setIsCategoriesModalOpen(false)}
+					categoriesList={categoriesList}
+					onCategorySelection={handleNewItemCategorySelection}
+				/>
+				{/* <CategoriesModal
 				categoriesList={categoriesList}
 				onCategorySelection={handleNewItemCategorySelection}
 				modalOpened={modalOpened}
 				closeModal={close}
-			/>
+			/> */}
+			</div>
 		</>
 	);
 };

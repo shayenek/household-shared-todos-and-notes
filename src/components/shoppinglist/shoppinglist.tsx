@@ -1,4 +1,5 @@
-import { Select, Button, TextInput, Popover, Loader } from '@mantine/core';
+import { Select, Button, TextInput, Popover, Loader, Modal } from '@mantine/core';
+import { useDisclosure, useCounter } from '@mantine/hooks';
 import { modals } from '@mantine/modals';
 import {
 	type ShoppingItem,
@@ -116,6 +117,8 @@ export const ShoppingList = () => {
 
 	const [totalPriceForItems, setTotalPriceForItems] = useState(0);
 
+	const [opened, { close, open }] = useDisclosure(false);
+
 	const itemCategories = api.shoppingDatabase.getCategories.useQuery();
 	const allDatabaseItems = api.shoppingDatabase.getAllItems.useQuery();
 	const filteredDatabaseItems = api.shoppingDatabase.getAllItemsWithoutShoppingItems.useQuery();
@@ -130,6 +133,8 @@ export const ShoppingList = () => {
 
 	const markAllItemsChecked = api.shoppingList.markAllChecked.useMutation();
 	const clearShoppingListItems = api.shoppingList.clearShoppingList.useMutation();
+
+	const deleteItem = api.shoppingList.deleteItemFromList.useMutation();
 
 	// useEffect(() => {
 	// 	if (window.localStorage.getItem('shoppingListItems')) {
@@ -292,7 +297,39 @@ export const ShoppingList = () => {
 		addItemToShoppingList.mutate(newItem);
 	};
 
+	const handleOpenDeletionModal = (id: number, name: string) => {
+		modals.openConfirmModal({
+			title: `Do you really wanna delete: ${name}?`,
+			styles: {
+				content: {
+					background: '#1d1f20',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+				body: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				header: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				close: {
+					background: '#17181c',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+			},
+			centered: true,
+			labels: { confirm: 'Confirm', cancel: 'Cancel' },
+			onConfirm: () => {
+				handleItemDeletion(id);
+			},
+		});
+	};
+
 	const handleItemDeletion = (id: number) => {
+		deleteItem.mutate({ id: id });
 		const deletedItem = allShoppingDatabaseItems.find((item) => item.id === id);
 		const newshoppngDatabaseItems = [...shoppingDatabaseItems, deletedItem as ShoppingDataBase];
 		setShoppingDatabaseItems(newshoppngDatabaseItems.sort((a, b) => b.weight - a.weight));
@@ -427,7 +464,7 @@ export const ShoppingList = () => {
 		<>
 			<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
 				<div className="flex items-center justify-between">
-					<div className="flex w-full items-center justify-between text-lg font-bold text-[#030910] dark:text-[#e0e2e4] md:text-xl">
+					<div className="flex w-full items-center justify-between text-base font-bold text-[#030910] dark:text-[#e0e2e4] md:text-xl">
 						<span>
 							Lista zakupów (łącznie:{' '}
 							{totalPriceForItems.toFixed(2).replace('.', ',')}):
@@ -435,7 +472,7 @@ export const ShoppingList = () => {
 					</div>
 				</div>
 				<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
-				<div className="relative flex justify-between gap-4">
+				<div className="relative flex justify-between gap-2">
 					<div className="w-full flex-auto md:relative">
 						<TextInput
 							placeholder="Nazwa"
@@ -589,7 +626,9 @@ export const ShoppingList = () => {
 									<ShoppingItemEl
 										key={`${item.name}shopping`}
 										item={item}
-										onItemDeletion={() => handleItemDeletion(item.id)}
+										onItemDeletion={() =>
+											handleOpenDeletionModal(item.id, item.name)
+										}
 										onItemCheck={() => handleItemCheck(item.id)}
 										onQuantityChange={handleQuantityChange}
 										done={false}
@@ -675,7 +714,9 @@ export const ShoppingList = () => {
 											<ShoppingItemEl
 												key={`${item.name}shopping`}
 												item={item}
-												onItemDeletion={() => handleItemDeletion(item.id)}
+												onItemDeletion={() =>
+													handleOpenDeletionModal(item.id, item.name)
+												}
 												onItemCheck={() => handleItemCheck(item.id)}
 												onQuantityChange={handleQuantityChange}
 												done={true}

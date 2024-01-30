@@ -22,10 +22,12 @@ export const ShoppingItemEl = ({
 	const [checked, setChecked] = useState(false);
 	const [itemQuantity, setItemQuantity] = useState(item.quantity);
 	const checkItem = api.shoppingList.checkItem.useMutation();
-	const deleteItem = api.shoppingList.deleteItemFromList.useMutation();
 	const updateQuantity = api.shoppingList.updateItemQuantity.useMutation();
 
 	const handleCheck = () => {
+		if (done) {
+			return;
+		}
 		setChecked(!checked);
 		onItemCheck();
 		checkItem.mutate({ id: item.id, checked: !checked });
@@ -33,7 +35,6 @@ export const ShoppingItemEl = ({
 
 	const handleDeleteItem = () => {
 		onItemDeletion();
-		deleteItem.mutate({ id: item.id });
 	};
 
 	const handleChangeQuantity = (action: 'add' | 'subtract') => {
@@ -59,11 +60,12 @@ export const ShoppingItemEl = ({
 			}`}
 		>
 			<div
-				className="flex w-full items-center justify-between"
+				className={`flex w-full items-center justify-between ${
+					!done ? 'cursor-pointer' : ''
+				}`}
 				onClick={() => handleCheck()}
 				onKeyDown={() => handleCheck()}
-				role="button"
-				tabIndex={0}
+				role="none"
 			>
 				<div className="flex items-center gap-2">
 					<div
@@ -112,15 +114,17 @@ export const ShoppingItemEl = ({
 						</span>
 					)}
 				</div>
-				<div
-					className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
-					onClick={() => handleDeleteItem()}
-					onKeyDown={() => handleDeleteItem()}
-					role="button"
-					tabIndex={0}
-				>
-					X
-				</div>
+				{!done && (
+					<div
+						className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
+						onClick={() => handleDeleteItem()}
+						onKeyDown={() => handleDeleteItem()}
+						role="button"
+						tabIndex={0}
+					>
+						X
+					</div>
+				)}
 			</div>
 		</div>
 	);

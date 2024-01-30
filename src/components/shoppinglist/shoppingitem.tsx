@@ -25,9 +25,6 @@ export const ShoppingItemEl = ({
 	const updateQuantity = api.shoppingList.updateItemQuantity.useMutation();
 
 	const handleCheck = () => {
-		if (done) {
-			return;
-		}
 		setChecked(!checked);
 		onItemCheck();
 		checkItem.mutate({ id: item.id, checked: !checked });

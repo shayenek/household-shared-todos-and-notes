@@ -54,7 +54,7 @@ export const ShoppingItemEl = ({
 
 	return (
 		<div
-			className={`my-1 flex cursor-pointer items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527] ${
+			className={`my-1 flex items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527]  ${
 				className ?? ''
 			}`}
 		>
@@ -81,6 +81,8 @@ export const ShoppingItemEl = ({
 						{item.name}
 					</span>
 				</div>
+			</div>
+			<div className="flex items-center">
 				<div className="flex w-16 justify-center">
 					{done ? (
 						<span className="flex items-center gap-1 text-xs text-[#030910] dark:text-white md:text-base">
@@ -110,15 +112,15 @@ export const ShoppingItemEl = ({
 						</span>
 					)}
 				</div>
-			</div>
-			<div
-				className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
-				onClick={() => handleDeleteItem()}
-				onKeyDown={() => handleDeleteItem()}
-				role="button"
-				tabIndex={0}
-			>
-				X
+				<div
+					className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
+					onClick={() => handleDeleteItem()}
+					onKeyDown={() => handleDeleteItem()}
+					role="button"
+					tabIndex={0}
+				>
+					X
+				</div>
 			</div>
 		</div>
 	);

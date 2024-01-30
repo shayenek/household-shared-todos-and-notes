@@ -70,7 +70,6 @@ export const CategoriesWindow = ({
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'Enter' && selectedItem) {
-				console.log(selectedItem);
 				onCategorySelection(selectedItem, false);
 			} else {
 				const index = filteredCategoriesList.findIndex(
@@ -139,7 +138,7 @@ export const CategoriesWindow = ({
 				{filteredCategoriesList.map((category) => (
 					<>
 						<div
-							key={category.name}
+							key={`${category.id}-${category.name}`}
 							onClick={() => onCategorySelection(category, false)}
 							onKeyDown={() => onCategorySelection(category, false)}
 							role="button"

@@ -9,15 +9,21 @@ export const ShoppingItemEl = ({
 	item,
 	onItemDeletion,
 	onItemCheck,
+	onQuantityChange,
+	done,
 }: {
 	className?: string;
 	item: ShoppingItem;
 	onItemDeletion: () => void;
 	onItemCheck: () => void;
+	onQuantityChange: (id: number, quantity: number) => void;
+	done: boolean | null;
 }) => {
 	const [checked, setChecked] = useState(false);
+	const [itemQuantity, setItemQuantity] = useState(item.quantity);
 	const checkItem = api.shoppingList.checkItem.useMutation();
 	const deleteItem = api.shoppingList.deleteItemFromList.useMutation();
+	const updateQuantity = api.shoppingList.updateItemQuantity.useMutation();
 
 	const handleCheck = () => {
 		setChecked(!checked);
@@ -28,6 +34,18 @@ export const ShoppingItemEl = ({
 	const handleDeleteItem = () => {
 		onItemDeletion();
 		deleteItem.mutate({ id: item.id });
+	};
+
+	const handleChangeQuantity = (action: 'add' | 'subtract') => {
+		let newQuantity = itemQuantity;
+		if (action === 'add') {
+			newQuantity = newQuantity + 1;
+		} else {
+			newQuantity = Math.max(1, newQuantity - 1);
+		}
+		setItemQuantity(newQuantity);
+		onQuantityChange(item.id, newQuantity);
+		updateQuantity.mutate({ id: item.id, quantity: newQuantity });
 	};
 
 	useEffect(() => {
@@ -50,7 +68,7 @@ export const ShoppingItemEl = ({
 				<div className="flex items-center gap-2">
 					<div
 						className={
-							'flex h-6 w-6 items-center justify-center rounded-full bg-[#f0f1f3] dark:bg-[#2b3031]' +
+							'flex h-4 w-4 items-center justify-center rounded-full bg-[#f0f1f3] dark:bg-[#2b3031] md:h-6 md:w-6' +
 							(checked ? ' !bg-green-500' : '')
 						}
 					>
@@ -59,18 +77,42 @@ export const ShoppingItemEl = ({
 							className={checked ? 'block text-black' : 'hidden'}
 						/>
 					</div>
-					<span className="text-sm text-[#030910] dark:text-white md:text-base">
+					<span className="text-xs text-[#030910] dark:text-white md:text-base">
 						{item.name}
 					</span>
 				</div>
-				<div className="flex w-8 justify-center">
-					<span className="text-sm text-[#030910] dark:text-white md:text-base">
-						{item.quantity}
-					</span>
+				<div className="flex w-16 justify-center">
+					{done ? (
+						<span className="flex items-center gap-1 text-xs text-[#030910] dark:text-white md:text-base">
+							{itemQuantity}
+						</span>
+					) : (
+						<span className="flex items-center gap-1 text-xs text-[#030910] dark:text-white md:text-base">
+							<button
+								className="flex h-3 w-3 items-center justify-center bg-green-600 px-1 text-[12px] text-white"
+								onClick={(e) => {
+									e.stopPropagation();
+									handleChangeQuantity('add');
+								}}
+							>
+								+
+							</button>
+							{itemQuantity}
+							<button
+								className="flex h-3 w-3 items-center justify-center bg-red-600 px-1 text-[12px] text-white"
+								onClick={(e) => {
+									e.stopPropagation();
+									handleChangeQuantity('subtract');
+								}}
+							>
+								-
+							</button>
+						</span>
+					)}
 				</div>
 			</div>
 			<div
-				className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
+				className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-sm bg-red-500 font-bold text-white"
 				onClick={() => handleDeleteItem()}
 				onKeyDown={() => handleDeleteItem()}
 				role="button"

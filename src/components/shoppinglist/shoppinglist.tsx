@@ -16,6 +16,7 @@ import { ShoppingItemEl } from './shoppingitem';
 interface ShoppingItemsGrouped {
 	categoryId: number;
 	categoryName: string;
+	priceForItems: number;
 	items: ShoppingItem[];
 }
 
@@ -29,9 +30,14 @@ const groupByCategory: (
 		if (!uniqueCategoryIds.has(category.id)) {
 			uniqueCategoryIds.add(category.id);
 
+			const priceForItems = list
+				.filter((item) => item.categoryId === category.id)
+				.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
 			const groupedItems: ShoppingItemsGrouped = {
 				categoryId: category.id,
 				categoryName: category.name,
+				priceForItems: priceForItems,
 				items: list.filter((item) => item.categoryId === category.id),
 			};
 
@@ -78,6 +84,7 @@ const convertDatabaseItemToShoppingItem = (
 		createdAt: new Date(),
 		updatedAt: new Date(),
 		location: item.location,
+		price: item.price,
 	};
 };
 
@@ -105,6 +112,10 @@ export const ShoppingList = () => {
 		ShoppingItemsGrouped[]
 	>([]);
 
+	const [finishedGroupsOfItems, setFinishedGroupsOfItems] = useState<ShoppingItemsGrouped[]>([]);
+
+	const [totalPriceForItems, setTotalPriceForItems] = useState(0);
+
 	const itemCategories = api.shoppingDatabase.getCategories.useQuery();
 	const allDatabaseItems = api.shoppingDatabase.getAllItems.useQuery();
 	const filteredDatabaseItems = api.shoppingDatabase.getAllItemsWithoutShoppingItems.useQuery();
@@ -120,15 +131,15 @@ export const ShoppingList = () => {
 	const markAllItemsChecked = api.shoppingList.markAllChecked.useMutation();
 	const clearShoppingListItems = api.shoppingList.clearShoppingList.useMutation();
 
-	useEffect(() => {
-		if (window.localStorage.getItem('shoppingListItems')) {
-			setShoppingItemsGroupedByCategory(
-				JSON.parse(
-					window.localStorage.getItem('shoppingListItems') as string
-				) as ShoppingItemsGrouped[]
-			);
-		}
-	}, []);
+	// useEffect(() => {
+	// 	if (window.localStorage.getItem('shoppingListItems')) {
+	// 		setShoppingItemsGroupedByCategory(
+	// 			JSON.parse(
+	// 				window.localStorage.getItem('shoppingListItems') as string
+	// 			) as ShoppingItemsGrouped[]
+	// 		);
+	// 	}
+	// }, []);
 
 	useEffect(() => {
 		if (itemCategories.data) {
@@ -150,7 +161,27 @@ export const ShoppingList = () => {
 
 	useEffect(() => {
 		if (shoppingListItems && categoriesList) {
-			setShoppingItemsGroupedByCategory(groupByCategory(shoppingListItems, categoriesList));
+			const groupedByCategory = groupByCategory(shoppingListItems, categoriesList);
+			if (groupedByCategory.length > 0) {
+				const fullGroupsChecked = groupedByCategory.filter((group) => {
+					const checkedItems = group.items.filter((item) => item.checked);
+					return checkedItems.length === group.items.length;
+				});
+				if (fullGroupsChecked.length > 0) {
+					setFinishedGroupsOfItems(fullGroupsChecked);
+					setShoppingItemsGroupedByCategory(
+						groupedByCategory.filter((group) => {
+							const checkedItems = group.items.filter((item) => item.checked);
+							return checkedItems.length !== group.items.length;
+						})
+					);
+				} else {
+					setShoppingItemsGroupedByCategory(groupedByCategory);
+				}
+			}
+			setTotalPriceForItems(() =>
+				groupedByCategory.reduce((sum, group) => sum + group.priceForItems, 0)
+			);
 		}
 	}, [shoppingListItems, categoriesList]);
 
@@ -278,6 +309,24 @@ export const ShoppingList = () => {
 				return item;
 			})
 		);
+
+		if (shoppingItemsGroupedByCategory.length > 0) {
+			const fullGroupsChecked = shoppingItemsGroupedByCategory.filter((group) => {
+				const checkedItems = group.items.filter((item) => item.checked);
+				return checkedItems.length === group.items.length;
+			});
+			if (fullGroupsChecked.length > 0) {
+				setFinishedGroupsOfItems(fullGroupsChecked);
+				setShoppingItemsGroupedByCategory(
+					shoppingItemsGroupedByCategory.filter((group) => {
+						const checkedItems = group.items.filter((item) => item.checked);
+						return checkedItems.length !== group.items.length;
+					})
+				);
+			} else {
+				setShoppingItemsGroupedByCategory(shoppingItemsGroupedByCategory);
+			}
+		}
 	};
 
 	const markAllChecked = () => {
@@ -363,12 +412,26 @@ export const ShoppingList = () => {
 		);
 	};
 
+	const handleQuantityChange = (id: number, quantity: number) => {
+		setShoppingListItems((prev) =>
+			prev.map((item) => {
+				if (item.id === id) {
+					item.quantity = quantity;
+				}
+				return item;
+			})
+		);
+	};
+
 	return (
 		<>
 			<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
 				<div className="flex items-center justify-between">
-					<div className="flex w-full items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
-						<span>Lista zakupów:</span>
+					<div className="flex w-full items-center justify-between text-lg font-bold text-[#030910] dark:text-[#e0e2e4] md:text-xl">
+						<span>
+							Lista zakupów (łącznie:{' '}
+							{totalPriceForItems.toFixed(2).replace('.', ',')}):
+						</span>
 					</div>
 				</div>
 				<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
@@ -514,10 +577,11 @@ export const ShoppingList = () => {
 						>
 							<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 							<div className="flex items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
-								<span className="text-sm md:text-lg">
+								<span className="text-xs md:text-lg">
 									{group.categoryName.charAt(0).toUpperCase() +
 										group.categoryName.slice(1)}
 								</span>
+								<span>{group.priceForItems.toFixed(2).replace('.', ',')} zł</span>
 							</div>
 							<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 							{group.items &&
@@ -527,6 +591,8 @@ export const ShoppingList = () => {
 										item={item}
 										onItemDeletion={() => handleItemDeletion(item.id)}
 										onItemCheck={() => handleItemCheck(item.id)}
+										onQuantityChange={handleQuantityChange}
+										done={false}
 									/>
 								))}
 						</div>
@@ -574,6 +640,52 @@ export const ShoppingList = () => {
 				modalOpened={modalOpened}
 				closeModal={close}
 			/> */}
+			</div>
+			<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
+				<div className="flex items-center justify-between">
+					<div className="flex w-full items-center justify-between text-lg font-bold text-[#030910] dark:text-[#e0e2e4] md:text-xl">
+						<span>Zakupione:</span>
+					</div>
+				</div>
+				<div className="flex flex-col">
+					{isLoading && (
+						<div className="flex items-center justify-center p-10">
+							<Loader color="blue" size="xl" />
+						</div>
+					)}
+					{finishedGroupsOfItems.length > 0 && (
+						<div className="flex flex-col">
+							{finishedGroupsOfItems.map((group) => (
+								<div
+									key={group.categoryId}
+									className={`flex flex-col ${
+										clicksOnListBlocked ? 'pointer-events-none' : ''
+									}`}
+								>
+									<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
+									<div className="flex items-center justify-between text-xs font-bold text-[#030910] dark:text-[#e0e2e4] md:text-sm">
+										<span className="text-xs md:text-lg">
+											{group.categoryName.charAt(0).toUpperCase() +
+												group.categoryName.slice(1)}
+										</span>
+									</div>
+									<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
+									{group.items &&
+										group.items.map((item) => (
+											<ShoppingItemEl
+												key={`${item.name}shopping`}
+												item={item}
+												onItemDeletion={() => handleItemDeletion(item.id)}
+												onItemCheck={() => handleItemCheck(item.id)}
+												onQuantityChange={handleQuantityChange}
+												done={true}
+											/>
+										))}
+								</div>
+							))}
+						</div>
+					)}
+				</div>
 			</div>
 		</>
 	);

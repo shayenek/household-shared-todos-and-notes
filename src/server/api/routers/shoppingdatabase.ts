@@ -104,6 +104,7 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 					createdAt: new Date(),
 					updatedAt: new Date(),
 					weight: 1,
+					price: 0,
 				},
 			});
 
@@ -115,6 +116,7 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 						quantity: input.dataBaseObject.quantity,
 						categoryId: input.dataBaseObject.categoryId,
 						checked: false,
+						price: 0,
 					},
 				});
 			}
@@ -219,6 +221,7 @@ export const shoppingListRouter = createTRPCRouter({
 					quantity: input.quantity,
 					categoryId: item.categoryId,
 					checked: false,
+					price: 0,
 				},
 			});
 
@@ -323,5 +326,55 @@ export const shoppingListRouter = createTRPCRouter({
 			});
 
 			return deletedItem;
+		}),
+	updateItemQuantity: protectedProcedure
+		.input(
+			z.object({
+				id: z.number(),
+				quantity: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const itemId = input.id;
+
+			const item = await ctx.prisma.shoppingItem.findUnique({
+				where: {
+					id: itemId,
+				},
+			});
+
+			if (!item) {
+				throw new Error('Item not found');
+			}
+
+			const updatedItem = await ctx.prisma.shoppingItem.update({
+				where: {
+					id: itemId,
+				},
+				data: {
+					quantity: input.quantity,
+				},
+			});
+
+			return updatedItem;
+		}),
+	getPriceForEntireGroupOfItems: protectedProcedure
+		.input(
+			z.object({
+				categoryId: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const items = await ctx.prisma.shoppingItem.findMany({
+				where: {
+					categoryId: input.categoryId,
+				},
+			});
+
+			const priceForItems = items.reduce((acc, item) => {
+				return acc + item.quantity * item.price;
+			}, 0);
+
+			return priceForItems;
 		}),
 });

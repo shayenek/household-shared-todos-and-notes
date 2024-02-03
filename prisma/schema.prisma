@@ -109,7 +109,7 @@ model ShoppingDataBase {
   location   String?
   weight     Int                    @default(1)
   categoryId Int
-  price      Int
+  price      Float                  @default(0) @db.Real
   category   ShoppingCategoriesList @relation(fields: [categoryId], references: [id])
 }
 

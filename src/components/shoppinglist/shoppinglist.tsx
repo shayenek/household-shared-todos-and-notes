@@ -117,8 +117,6 @@ export const ShoppingList = () => {
 
 	const [totalPriceForItems, setTotalPriceForItems] = useState(0);
 
-	const [opened, { close, open }] = useDisclosure(false);
-
 	const itemCategories = api.shoppingDatabase.getCategories.useQuery();
 	const allDatabaseItems = api.shoppingDatabase.getAllItems.useQuery();
 	const filteredDatabaseItems = api.shoppingDatabase.getAllItemsWithoutShoppingItems.useQuery();
@@ -333,7 +331,16 @@ export const ShoppingList = () => {
 		const deletedItem = allShoppingDatabaseItems.find((item) => item.id === id);
 		const newshoppngDatabaseItems = [...shoppingDatabaseItems, deletedItem as ShoppingDataBase];
 		setShoppingDatabaseItems(newshoppngDatabaseItems.sort((a, b) => b.weight - a.weight));
-		setShoppingListItems((prev) => prev.filter((item) => item.id !== id));
+		if (shoppingItemsGroupedByCategory.length > 0) {
+			setShoppingItemsGroupedByCategory((prev) =>
+				prev
+					.map((group) => {
+						group.items = group.items.filter((item) => item.id !== id);
+						return group;
+					})
+					.filter((group) => group.items.length > 0)
+			);
+		}
 	};
 
 	const handleItemCheck = (id: number) => {
@@ -417,6 +424,8 @@ export const ShoppingList = () => {
 			onConfirm: () => {
 				setShoppingDatabaseItems(shoppingDatabaseItems.sort((a, b) => b.weight - a.weight));
 				setShoppingListItems([]);
+				setFinishedGroupsOfItems([]);
+				setShoppingItemsGroupedByCategory([]);
 				clearShoppingListItems.mutate();
 			},
 		});

@@ -46,7 +46,8 @@
     "superjson": "1.12.2",
     "ws": "^8.13.0",
     "zod": "^3.21.4",
-    "zustand": "^4.3.8"
+    "zustand": "^4.3.8",
+    "zustymiddleware": "^1.2.0"
   },
   "devDependencies": {
     "@types/eslint": "^8.37.0",

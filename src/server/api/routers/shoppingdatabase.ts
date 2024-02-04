@@ -286,19 +286,9 @@ export const shoppingListRouter = createTRPCRouter({
 		return true;
 	}),
 	clearShoppingList: protectedProcedure.mutation(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingItem.findMany();
+		const allItems = await ctx.prisma.shoppingItem.deleteMany();
 
-		const deletedItems = allItems.map((item) => {
-			return ctx.prisma.shoppingItem.delete({
-				where: {
-					id: item.id,
-				},
-			});
-		});
-
-		await Promise.all(deletedItems);
-
-		return true;
+		return allItems;
 	}),
 	deleteItemFromList: protectedProcedure
 		.input(

@@ -1,3 +1,4 @@
+import { modals } from '@mantine/modals';
 import { type ShoppingItem } from '@prisma/client';
 import { IconCheck } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
@@ -14,24 +15,57 @@ export const ShoppingItemEl = ({
 }: {
 	className?: string;
 	item: ShoppingItem;
-	onItemDeletion: () => void;
-	onItemCheck: () => void;
-	onQuantityChange: (id: number, quantity: number) => void;
+	onItemDeletion?: () => void;
+	onItemCheck?: () => void;
+	onQuantityChange?: (id: number, quantity: number) => void;
 	done: boolean | null;
 }) => {
 	const [checked, setChecked] = useState(false);
 	const [itemQuantity, setItemQuantity] = useState(item.quantity);
 	const checkItem = api.shoppingList.checkItem.useMutation();
 	const updateQuantity = api.shoppingList.updateItemQuantity.useMutation();
+	const deleteItem = api.shoppingList.deleteItemFromList.useMutation();
 
 	const handleCheck = () => {
 		setChecked(!checked);
-		onItemCheck();
+		if (onItemCheck) {
+			onItemCheck();
+		}
 		checkItem.mutate({ id: item.id, checked: !checked });
 	};
 
 	const handleDeleteItem = () => {
-		onItemDeletion();
+		modals.openConfirmModal({
+			title: `Do you really wanna delete: ${item.name}?`,
+			styles: {
+				content: {
+					background: '#1d1f20',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+				body: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				header: {
+					color: '#fff',
+					background: '#1d1f20',
+				},
+				close: {
+					background: '#17181c',
+					borderWidth: '2px',
+					borderColor: '#2b3031',
+				},
+			},
+			centered: true,
+			labels: { confirm: 'Confirm', cancel: 'Cancel' },
+			onConfirm: () => {
+				deleteItem.mutate({ id: item.id });
+				if (onItemDeletion) {
+					onItemDeletion();
+				}
+			},
+		});
 	};
 
 	const handleChangeQuantity = (action: 'add' | 'subtract') => {
@@ -42,7 +76,9 @@ export const ShoppingItemEl = ({
 			newQuantity = Math.max(1, newQuantity - 1);
 		}
 		setItemQuantity(newQuantity);
-		onQuantityChange(item.id, newQuantity);
+		if (onQuantityChange) {
+			onQuantityChange(item.id, newQuantity);
+		}
 		updateQuantity.mutate({ id: item.id, quantity: newQuantity });
 	};
 

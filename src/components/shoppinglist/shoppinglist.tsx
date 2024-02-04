@@ -80,7 +80,6 @@ export const ShoppingList = () => {
 			});
 		}
 		if (filteredDatabaseItems.data) {
-			console.log(filteredDatabaseItems.data);
 			useShoppingStore.setState({
 				shoppingDatabaseFiltered: filteredDatabaseItems.data,
 			});

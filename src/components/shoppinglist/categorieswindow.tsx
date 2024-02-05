@@ -2,21 +2,23 @@ import { Button, TextInput } from '@mantine/core';
 import { type ShoppingCategoriesList } from '@prisma/client';
 import { useEffect, useRef, useState } from 'react';
 
+import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
 import { DialogWindow } from './dialogwindow';
 
 export const CategoriesWindow = ({
-	isOpen,
-	onClose,
-	categoriesList,
 	onCategorySelection,
 }: {
-	isOpen: boolean;
-	onClose: () => void;
-	categoriesList: ShoppingCategoriesList[];
 	onCategorySelection: (category: ShoppingCategoriesList, refreshCategoriesList: boolean) => void;
 }) => {
+	const { isCategoriesModalOpen, shoppingCategories: categoriesList } = useShoppingStore(
+		(state) => ({
+			isCategoriesModalOpen: state.isCategoriesModalOpen,
+			shoppingCategories: state.shoppingCategories,
+		})
+	);
+
 	const [inputVal, setInputVal] = useState('');
 	const [filteredCategoriesList, setFilteredCategoriesList] = useState(categoriesList);
 	const [selectedItem, setSelectedItem] = useState<ShoppingCategoriesList | null>(null);
@@ -39,10 +41,10 @@ export const CategoriesWindow = ({
 	};
 
 	useEffect(() => {
-		if (isOpen) {
+		if (isCategoriesModalOpen) {
 			inputRef.current?.focus();
 		}
-	}, [isOpen]);
+	}, [isCategoriesModalOpen]);
 
 	useEffect(() => {
 		const filteredCategories = categoriesList
@@ -92,7 +94,7 @@ export const CategoriesWindow = ({
 				}
 			}
 		};
-		if (isOpen) {
+		if (isCategoriesModalOpen) {
 			document.body.addEventListener('keydown', handleKeyDown);
 		} else {
 			document.body.removeEventListener('keydown', handleKeyDown);
@@ -101,12 +103,19 @@ export const CategoriesWindow = ({
 		return () => {
 			document.body.removeEventListener('keydown', handleKeyDown);
 		};
-	}, [isOpen, selectedItem]);
+	}, [isCategoriesModalOpen, selectedItem]);
+
+	const handleOnClose = () => {
+		useShoppingStore.setState({
+			isCategoriesModalOpen: false,
+			addButtonClicked: false,
+		});
+	};
 
 	return (
 		<DialogWindow
-			isOpen={isOpen}
-			onClose={onClose}
+			isOpen={isCategoriesModalOpen}
+			onClose={handleOnClose}
 			hasCloseButton={true}
 			header={
 				<div className="flex gap-2 bg-white dark:bg-[#1d1f20]">

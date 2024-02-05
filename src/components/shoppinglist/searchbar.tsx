@@ -1,10 +1,6 @@
 import { Button, Select, TextInput } from '@mantine/core';
-import {
-	type ShoppingItem,
-	type ShoppingCategoriesList,
-	type ShoppingDataBase,
-} from '@prisma/client';
-import { useCallback, useEffect, useState } from 'react';
+import { type ShoppingItem, type ShoppingCategoriesList } from '@prisma/client';
+import { useEffect, useState } from 'react';
 
 import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
@@ -13,17 +9,16 @@ import { CategoriesWindow } from './categorieswindow';
 import { DatabaseItemsList } from './databaseitemslist';
 
 export const SearchBar = () => {
-	const { totalPriceForItems, amountValue, searchItemInputVal, selectedItem } = useShoppingStore(
-		(state) => ({
+	const { totalPriceForItems, amountValue, searchItemInputVal, selectedItem, addButtonClicked } =
+		useShoppingStore((state) => ({
 			totalPriceForItems: state.totalPrice,
 			amountValue: state.amountValue,
 			searchItemInputVal: state.searchInputVal,
 			selectedItem: state.selectedItem,
-		})
-	);
+			addButtonClicked: state.addButtonClicked,
+		}));
 
-	// const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false);
-	// const createDatabaseItem = api.shoppingDatabase.createNewItem.useMutation();
+	const createDatabaseItem = api.shoppingDatabase.createNewItem.useMutation();
 
 	const [inputValue, setInputValue] = useState('');
 
@@ -31,54 +26,67 @@ export const SearchBar = () => {
 		setInputValue(searchItemInputVal);
 	}, [searchItemInputVal]);
 
-	// const handleSelectItem = (item: ShoppingDataBase, autoSelect?: boolean) => {
-	// 	setSearchItemInputVal(item.name);
-	// 	setShowDatabaseList(false);
-	// 	if (autoSelect) {
-	// 		handleAddItemToShoppingList(item);
-	// 	}
-	// 	setTimeout(() => {
-	// 		onClicksOnListBlockedChange(false);
-	// 	}, 500);
-	// };
+	const handleNewItemState = (newShoppingItem: ShoppingItem) => {
+		useShoppingStore.setState({
+			shoppingList: [...useShoppingStore.getState().shoppingList, newShoppingItem],
+			amountValue: 1,
+			selectedItem: null,
+			searchInputVal: '',
+			addButtonClicked: false,
+		});
+	};
 
-	// const handleAddButtonClick = () => {
-	// 	const item = allShoppingDatabaseItems.find(
-	// 		(item) => item.name.toLowerCase() === searchItemInputVal.toLowerCase()
-	// 	);
-	// 	if (item) {
-	// 		handleAddItemToShoppingList(item);
-	// 	} else {
-	// 		setIsCategoriesModalOpen(true);
-	// 	}
-	// };
+	const handleNewItemCategorySelection = (
+		category: ShoppingCategoriesList,
+		refreshCategoriesList: boolean
+	) => {
+		const newDatabaseItem = {
+			name: searchItemInputVal,
+			categoryId: category.id,
+			quantity: useShoppingStore.getState().amountValue,
+		};
+		createDatabaseItem.mutate(
+			{
+				createNewShoppingItem: true,
+				dataBaseObject: newDatabaseItem,
+			},
+			{
+				onSuccess: (data) => {
+					const newShoppingItem = {
+						id: data.id,
+						name: data.name,
+						quantity: useShoppingStore.getState().amountValue,
+						checked: false,
+						categoryId: data.categoryId,
+						createdAt: data.createdAt,
+						updatedAt: data.updatedAt,
+						location: data.location,
+						price: data.price,
+					};
+					handleNewItemState(newShoppingItem);
+					useShoppingStore.setState({
+						shoppingDatabase: [...useShoppingStore.getState().shoppingDatabase, data],
+						isCategoriesModalOpen: false,
+					});
 
-	// const handleNewItemCategorySelection = (
-	// 	category: ShoppingCategoriesList,
-	// 	refreshCategoriesList: boolean
-	// ) => {
-	// 	const newDatabaseItem = {
-	// 		name: searchItemInputVal,
-	// 		categoryId: category.id,
-	// 		quantity: parseInt(amountValue || '1'),
-	// 	};
-	// 	createDatabaseItem.mutate(
-	// 		{
-	// 			createNewShoppingItem: false,
-	// 			dataBaseObject: newDatabaseItem,
-	// 		},
-	// 		{
-	// 			onSuccess: (data) => {
-	// 				setShoppingDatabaseItems((prev) => [...prev, data]);
-	// 				handleAddItemToShoppingList(data);
-	// 				if (refreshCategoriesList) {
-	// 					setCategoriesList((prev) => [...prev, category]);
-	// 				}
-	// 				setIsCategoriesModalOpen(false);
-	// 			},
-	// 		}
-	// 	);
-	// };
+					if (refreshCategoriesList) {
+						useShoppingStore.setState({
+							shoppingCategories: [
+								...useShoppingStore.getState().shoppingCategories,
+								category,
+							],
+						});
+					}
+				},
+			}
+		);
+	};
+
+	const handleAddButtonClick = () => {
+		if (!addButtonClicked) {
+			useShoppingStore.setState({ addButtonClicked: true });
+		}
+	};
 
 	return (
 		<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
@@ -145,7 +153,7 @@ export const SearchBar = () => {
 							)
 						}
 					/>
-					<DatabaseItemsList />
+					<DatabaseItemsList newItemState={handleNewItemState} />
 				</div>
 				<Select
 					data={[
@@ -181,19 +189,14 @@ export const SearchBar = () => {
 				/>
 				<Button
 					onClick={() => {
-						useShoppingStore.setState({ addButtonClicked: true });
+						handleAddButtonClick();
 					}}
 					disabled={!searchItemInputVal}
 				>
 					Dodaj
 				</Button>
 			</div>
-			{/* <CategoriesWindow
-				isOpen={isCategoriesModalOpen}
-				onClose={() => setIsCategoriesModalOpen(false)}
-				categoriesList={categoriesList}
-				onCategorySelection={handleNewItemCategorySelection}
-			/> */}
+			<CategoriesWindow onCategorySelection={handleNewItemCategorySelection} />
 		</div>
 	);
 };

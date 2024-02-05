@@ -1,27 +1,41 @@
-import {
-	type ShoppingDataBase,
-	type ShoppingCategoriesList,
-	type ShoppingItem,
-} from '@prisma/client';
+import { type ShoppingDataBase, type ShoppingItem } from '@prisma/client';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
-export const DatabaseItemsList = () => {
+export const DatabaseItemsList = ({
+	newItemState,
+}: {
+	newItemState: (newShoppingItem: ShoppingItem) => void;
+}) => {
 	const filterByKeyword = useCallback(
 		(items: ShoppingDataBase[], keyword: string, max: number) => {
 			if (keyword.length === 0) {
 				return items.slice(0, max);
 			}
 			return items
-				.filter((item) => item.name.toLowerCase().includes(keyword.toLowerCase()))
+				.filter((item) => {
+					const normalizedItemName = item.name
+						.toLowerCase()
+						.normalize('NFD')
+						.replace(/[\u0300-\u036f]/g, '');
+					const normalizedKeyword = keyword
+						.toLowerCase()
+						.normalize('NFD')
+						.replace(/[\u0300-\u036f]/g, '');
+					return normalizedItemName.includes(normalizedKeyword);
+				})
 				.sort((a, b) => {
 					const aStartsWithInputVal = a.name
 						.toLowerCase()
+						.normalize('NFD')
+						.replace(/[\u0300-\u036f]/g, '')
 						.startsWith(keyword.toLowerCase());
 					const bStartsWithInputVal = b.name
 						.toLowerCase()
+						.normalize('NFD')
+						.replace(/[\u0300-\u036f]/g, '')
 						.startsWith(keyword.toLowerCase());
 
 					if (aStartsWithInputVal && !bStartsWithInputVal) {
@@ -29,7 +43,7 @@ export const DatabaseItemsList = () => {
 					} else if (!aStartsWithInputVal && bStartsWithInputVal) {
 						return 1;
 					} else {
-						return a.name.localeCompare(b.name);
+						return a.name.localeCompare(b.name, 'pl');
 					}
 				})
 				.slice(0, max);
@@ -79,18 +93,14 @@ export const DatabaseItemsList = () => {
 	const handleAddItemToShoppingList = (item: ShoppingDataBase) => {
 		const newDatabaseItem = { ...item, weight: item.weight + 1 };
 		const newItem = convertDatabaseItemToShoppingItem(item, amountValue.toString() || '1');
-		console.log(newDatabaseItem);
 		useShoppingStore.setState({
 			shoppingDatabaseFiltered: filteredDatabaseItems
 				.concat(newDatabaseItem)
 				.filter((i) => i.id !== item.id)
 				.sort((a, b) => b.weight - a.weight),
-			shoppingList: [...useShoppingStore.getState().shoppingList, newItem],
-			amountValue: 1,
-			selectedItem: null,
 			showDatabaseList: false,
-			searchInputVal: '',
 		});
+		newItemState(newItem);
 		addItemToShoppingList.mutate(newItem);
 	};
 
@@ -145,8 +155,14 @@ export const DatabaseItemsList = () => {
 	}, [selectedItem, itemsByWord]);
 
 	useEffect(() => {
-		if (addButtonClicked && selectedItem) {
-			handleAddItemToShoppingList(selectedItem);
+		if (addButtonClicked) {
+			if (selectedItem) {
+				handleAddItemToShoppingList(selectedItem);
+				useShoppingStore.setState({ addButtonClicked: false });
+			} else {
+				useShoppingStore.setState({ isCategoriesModalOpen: true });
+			}
+		} else {
 			useShoppingStore.setState({ addButtonClicked: false });
 		}
 	}, [addButtonClicked]);

@@ -145,20 +145,28 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			return item;
 		}),
 	setAllItemsWeightToOne: protectedProcedure.mutation(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingDataBase.findMany();
+		// const allItems = await ctx.prisma.shoppingDataBase.findMany();
 
-		const updatedItems = allItems.map((item) => {
-			return ctx.prisma.shoppingDataBase.update({
-				where: {
-					id: item.id,
-				},
-				data: {
-					weight: 1,
-				},
-			});
+		// const updatedItems = allItems.map((item) => {
+		// 	return ctx.prisma.shoppingDataBase.update({
+		// 		where: {
+		// 			id: item.id,
+		// 		},
+		// 		data: {
+		// 			weight: 1,
+		// 		},
+		// 	});
+		// });
+
+		// await Promise.all(updatedItems);
+
+		// return true;
+		await ctx.prisma.shoppingDataBase.updateMany({
+			where: {}, // Empty where clause to update all items
+			data: {
+				weight: 1,
+			},
 		});
-
-		await Promise.all(updatedItems);
 
 		return true;
 	}),
@@ -268,20 +276,12 @@ export const shoppingListRouter = createTRPCRouter({
 			return newItem;
 		}),
 	markAllChecked: protectedProcedure.mutation(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingItem.findMany();
-
-		const updatedItems = allItems.map((item) => {
-			return ctx.prisma.shoppingItem.update({
-				where: {
-					id: item.id,
-				},
-				data: {
-					checked: true,
-				},
-			});
+		await ctx.prisma.shoppingItem.updateMany({
+			where: {},
+			data: {
+				checked: true,
+			},
 		});
-
-		await Promise.all(updatedItems);
 
 		return true;
 	}),

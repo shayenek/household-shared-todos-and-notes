@@ -37,6 +37,8 @@ export interface ShoppingState {
 	setClicksOnListBlocked: (clicksOnListBlocked: boolean) => void;
 	// shoppingDatabaseByWord: ShoppingDataBase[];
 	// setShoppingDatabaseByWord: (shoppingDatabaseByWord: ShoppingDataBase[]) => void;
+	isCategoriesModalOpen: boolean;
+	setIsCategoriesModalOpen: (isCategoriesModalOpen: boolean) => void;
 }
 
 export const useShoppingStore = create<ShoppingState>()(
@@ -83,6 +85,9 @@ export const useShoppingStore = create<ShoppingState>()(
 
 		// shoppingDatabaseByWord: [],
 		// setShoppingDatabaseByWord: (shoppingDatabaseByWord) => set({ shoppingDatabaseByWord }),
+
+		isCategoriesModalOpen: false,
+		setIsCategoriesModalOpen: (isCategoriesModalOpen) => set({ isCategoriesModalOpen }),
 	}))
 );
 

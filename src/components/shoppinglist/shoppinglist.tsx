@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useShoppingStore } from '~/store/shopping';
 import { type ShoppingItemsGrouped } from '~/types/shoppinglist';
 import { api } from '~/utils/api';
+import { useSubscribeToEvent } from '~/utils/pusher';
 
 import { BottomMenu } from './bottommenu';
 import { BoughtItems } from './boughtitems';
@@ -131,7 +132,14 @@ export const ShoppingList = () => {
 	const handleItemCheck = useCallback(
 		(id: number) => {
 			useShoppingStore.setState({
-				shoppingList: shoppingListItems.map((item) => {
+				// shoppingList: shoppingListItems.map((item) => {
+				// 	if (item.id === id) {
+				// 		item.checked = !item.checked;
+				// 		checkShoppingItem.mutate({ id, checked: item.checked });
+				// 	}
+				// 	return item;
+				// }),
+				shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 					if (item.id === id) {
 						item.checked = !item.checked;
 						checkShoppingItem.mutate({ id, checked: item.checked });
@@ -154,7 +162,12 @@ export const ShoppingList = () => {
 
 	const markAllChecked = () => {
 		useShoppingStore.setState({
-			shoppingList: shoppingListItems.map((item) => {
+			// shoppingList: shoppingListItems.map((item) => {
+			// 	item.checked = true;
+			// 	checkShoppingItem.mutate({ id: item.id, checked: item.checked });
+			// 	return item;
+			// }),
+			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 				item.checked = true;
 				checkShoppingItem.mutate({ id: item.id, checked: item.checked });
 				return item;
@@ -166,7 +179,13 @@ export const ShoppingList = () => {
 
 	const handleQuantityChange = (id: number, quantity: number) => {
 		useShoppingStore.setState({
-			shoppingList: shoppingListItems.map((item) => {
+			// shoppingList: shoppingListItems.map((item) => {
+			// 	if (item.id === id) {
+			// 		item.quantity = quantity;
+			// 	}
+			// 	return item;
+			// }),
+			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 				if (item.id === id) {
 					item.quantity = quantity;
 				}
@@ -174,6 +193,70 @@ export const ShoppingList = () => {
 			}),
 		});
 	};
+
+	useSubscribeToEvent((eventName, data: { shoppingItem: ShoppingItem }) => {
+		switch (eventName) {
+			case 'new-shopping-item':
+				if (
+					!useShoppingStore
+						.getState()
+						.shoppingList.find((item) => item.id === data.shoppingItem.id)
+				) {
+					useShoppingStore.setState({
+						shoppingList: [
+							...useShoppingStore.getState().shoppingList,
+							data.shoppingItem,
+						],
+						shoppingDatabaseFiltered: useShoppingStore
+							.getState()
+							.shoppingDatabaseFiltered.filter(
+								(item) => item.id !== data.shoppingItem.id
+							)
+							.sort((a, b) => b.weight - a.weight),
+					});
+				}
+				break;
+			case 'shopping-item-checked':
+				useShoppingStore.setState({
+					shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+						if (item.id === data.shoppingItem.id) {
+							item.checked = data.shoppingItem.checked;
+						}
+						return item;
+					}),
+				});
+				break;
+			case 'shopping-item-deleted':
+				{
+					const databaseItem = useShoppingStore
+						.getState()
+						.shoppingDatabase.find((item) => item.id === data.shoppingItem.id);
+
+					useShoppingStore.setState({
+						shoppingList: useShoppingStore
+							.getState()
+							.shoppingList.filter((item) => item.id !== data.shoppingItem.id),
+						shoppingDatabaseFiltered: [
+							...useShoppingStore.getState().shoppingDatabaseFiltered,
+							databaseItem as ShoppingDataBase,
+						].sort((a, b) => b.weight - a.weight),
+					});
+				}
+				break;
+			case 'shopping-item-quantityUpdate':
+				useShoppingStore.setState({
+					shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+						if (item.id === data.shoppingItem.id) {
+							item.quantity = data.shoppingItem.quantity;
+						}
+						return item;
+					}),
+				});
+				break;
+			default:
+				break;
+		}
+	});
 
 	return (
 		<>

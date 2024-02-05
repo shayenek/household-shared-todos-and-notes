@@ -86,6 +86,10 @@ export const ShoppingItemEl = ({
 		setChecked(item.checked);
 	}, [item.checked]);
 
+	useEffect(() => {
+		setItemQuantity(item.quantity);
+	}, [item.quantity]);
+
 	return (
 		<div
 			className={`my-1 flex items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527]  ${

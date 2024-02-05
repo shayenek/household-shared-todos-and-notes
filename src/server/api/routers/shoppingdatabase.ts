@@ -1,7 +1,7 @@
-import { type ShoppingItem } from '@prisma/client';
 import { z } from 'zod';
 
 import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
+import { pusherServerClient } from '~/server/pusher';
 
 export const shoppingDatabaseRouter = createTRPCRouter({
 	getCategories: protectedProcedure.query(async ({ ctx }) => {
@@ -222,7 +222,7 @@ export const shoppingListRouter = createTRPCRouter({
 				throw new Error('Item not found');
 			}
 
-			await ctx.prisma.shoppingItem.create({
+			const newshoppingItem = await ctx.prisma.shoppingItem.create({
 				data: {
 					id: itemId,
 					name: item.name,
@@ -242,6 +242,10 @@ export const shoppingListRouter = createTRPCRouter({
 				},
 			});
 
+			await pusherServerClient.trigger(`user-shayenek`, 'new-shopping-item', {
+				shoppingItem: newshoppingItem,
+			});
+
 			return updateWeight;
 		}),
 	checkItem: protectedProcedure
@@ -252,25 +256,17 @@ export const shoppingListRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const itemId = input.id;
-
-			const item = await ctx.prisma.shoppingItem.findUnique({
-				where: {
-					id: itemId,
-				},
-			});
-
-			if (!item) {
-				throw new Error('Item not found');
-			}
+			const { id, checked } = input;
 
 			const newItem = await ctx.prisma.shoppingItem.update({
-				where: {
-					id: itemId,
-				},
-				data: {
-					checked: input.checked,
-				},
+				where: { id },
+				data: { checked },
+			});
+
+			if (!newItem) throw new Error('Item not found');
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-item-checked', {
+				shoppingItem: newItem,
 			});
 
 			return newItem;
@@ -297,26 +293,21 @@ export const shoppingListRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const itemId = input.id;
-
-			const item = await ctx.prisma.shoppingItem.findUnique({
-				where: {
-					id: itemId,
-				},
-			});
-
-			if (!item) {
-				throw new Error('Item not found');
-			}
+			const { id } = input;
 
 			const deletedItem = await ctx.prisma.shoppingItem.delete({
-				where: {
-					id: itemId,
-				},
+				where: { id },
+			});
+
+			if (!deletedItem) throw new Error('Item not found');
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-item-deleted', {
+				shoppingItem: deletedItem,
 			});
 
 			return deletedItem;
 		}),
+
 	updateItemQuantity: protectedProcedure
 		.input(
 			z.object({
@@ -325,29 +316,22 @@ export const shoppingListRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const itemId = input.id;
-
-			const item = await ctx.prisma.shoppingItem.findUnique({
-				where: {
-					id: itemId,
-				},
-			});
-
-			if (!item) {
-				throw new Error('Item not found');
-			}
+			const { id, quantity } = input;
 
 			const updatedItem = await ctx.prisma.shoppingItem.update({
-				where: {
-					id: itemId,
-				},
-				data: {
-					quantity: input.quantity,
-				},
+				where: { id },
+				data: { quantity },
+			});
+
+			if (!updatedItem) throw new Error('Item not found');
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-item-quantityUpdate', {
+				shoppingItem: updatedItem,
 			});
 
 			return updatedItem;
 		}),
+
 	getPriceForEntireGroupOfItems: protectedProcedure
 		.input(
 			z.object({

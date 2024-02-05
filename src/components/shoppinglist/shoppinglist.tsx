@@ -132,13 +132,6 @@ export const ShoppingList = () => {
 	const handleItemCheck = useCallback(
 		(id: number) => {
 			useShoppingStore.setState({
-				// shoppingList: shoppingListItems.map((item) => {
-				// 	if (item.id === id) {
-				// 		item.checked = !item.checked;
-				// 		checkShoppingItem.mutate({ id, checked: item.checked });
-				// 	}
-				// 	return item;
-				// }),
 				shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 					if (item.id === id) {
 						item.checked = !item.checked;
@@ -162,11 +155,6 @@ export const ShoppingList = () => {
 
 	const markAllChecked = () => {
 		useShoppingStore.setState({
-			// shoppingList: shoppingListItems.map((item) => {
-			// 	item.checked = true;
-			// 	checkShoppingItem.mutate({ id: item.id, checked: item.checked });
-			// 	return item;
-			// }),
 			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 				item.checked = true;
 				checkShoppingItem.mutate({ id: item.id, checked: item.checked });
@@ -179,12 +167,6 @@ export const ShoppingList = () => {
 
 	const handleQuantityChange = (id: number, quantity: number) => {
 		useShoppingStore.setState({
-			// shoppingList: shoppingListItems.map((item) => {
-			// 	if (item.id === id) {
-			// 		item.quantity = quantity;
-			// 	}
-			// 	return item;
-			// }),
 			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
 				if (item.id === id) {
 					item.quantity = quantity;

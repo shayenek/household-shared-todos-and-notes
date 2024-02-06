@@ -1,14 +1,24 @@
+import { TextInput } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { type Pattern } from '@prisma/client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { set } from 'zod';
 
 import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
-export const PatternItemEl = ({ item }: { item: Pattern }) => {
+export const PatternItemEl = ({
+	item,
+	shouldBeFocused,
+}: {
+	item: Pattern;
+	shouldBeFocused: boolean;
+}) => {
 	const deleteItem = api.pattern.deleteItem.useMutation();
 	const updateWeight = api.pattern.setItemWeight.useMutation();
+	const updatePrice = api.pattern.setItemPrice.useMutation();
 	const [itemWeight, setItemWeight] = useState(item.weight);
+	const [itemPrice, setItemPrice] = useState(item.price.toString());
 
 	const handleChangeWeight = (type: 'add' | 'subtract') => {
 		const newWeight = type === 'add' ? itemWeight + 1 : itemWeight - 1;
@@ -60,6 +70,59 @@ export const PatternItemEl = ({ item }: { item: Pattern }) => {
 		});
 	};
 
+	const handleNewPrice = (newPrice: string) => {
+		const newPriceParsed = parseFloat(newPrice.replace(',', '.'));
+		if (newPriceParsed === item.price) return;
+		updatePrice.mutate({ id: item.id, price: newPriceParsed });
+		useShoppingStore.setState({
+			patterns: useShoppingStore.getState().patterns.map((pattern) => {
+				if (pattern.id === item.id) {
+					return { ...pattern, price: newPriceParsed };
+				}
+				return pattern;
+			}),
+		});
+	};
+
+	const priceInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (shouldBeFocused) {
+			priceInputRef.current?.focus();
+		}
+	}, [shouldBeFocused]);
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (
+				event.key === 'Enter' &&
+				item.price !== parseFloat(itemPrice) &&
+				priceInputRef.current === document.activeElement
+			) {
+				handleNewPrice(itemPrice);
+				useShoppingStore.setState({ currentPatternPriceInputId: item.id });
+			}
+		};
+
+		const handleSubmit = () => {
+			if (
+				item.price !== parseFloat(itemPrice) &&
+				priceInputRef.current === document.activeElement
+			) {
+				handleNewPrice(itemPrice);
+				useShoppingStore.setState({ currentPatternPriceInputId: item.id });
+			}
+		};
+
+		document.body.addEventListener('keydown', handleKeyDown);
+		document.body.addEventListener('submit', handleSubmit);
+
+		return () => {
+			document.body.removeEventListener('keydown', handleKeyDown);
+			document.body.removeEventListener('submit', handleSubmit);
+		};
+	}, [itemPrice]);
+
 	return (
 		<div
 			className={`my-1 flex items-center justify-between rounded-md bg-white px-2 py-1 dark:bg-[#232527]`}
@@ -72,6 +135,36 @@ export const PatternItemEl = ({ item }: { item: Pattern }) => {
 				</div>
 			</div>
 			<div className="flex items-center">
+				<TextInput
+					ref={priceInputRef}
+					value={itemPrice}
+					onChange={(event) => {
+						// Remove any non-digit, non-comma, non-dot characters
+						const sanitizedValue = event.target.value.replace(/[^\d,.]/g, '');
+
+						// Check if the sanitized value matches the format
+						const regex = /^\d*([,.]\d{0,2})?$/;
+						if (regex.test(sanitizedValue)) {
+							// Replace multiple commas or dots with a single dot
+							const formattedValue = sanitizedValue.replace(/[,.]+/g, '.');
+							setItemPrice(formattedValue);
+						}
+					}}
+					onBlur={() => {
+						handleNewPrice(itemPrice);
+						useShoppingStore.setState({
+							currentPatternPriceInputId: -1,
+							nextPatternPriceInputId: -1,
+						});
+					}}
+					onSubmitCapture={() => {
+						handleNewPrice(itemPrice);
+					}}
+					onSubmit={() => {
+						handleNewPrice(itemPrice);
+					}}
+					className="w-16"
+				/>
 				<div className="flex w-16 justify-center">
 					<span className="flex items-center gap-1 text-xs text-[#030910] dark:text-white md:text-base">
 						<button

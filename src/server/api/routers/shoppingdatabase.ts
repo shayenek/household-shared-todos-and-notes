@@ -171,6 +171,25 @@ export const patternRouter = createTRPCRouter({
 
 			return deletedItem;
 		}),
+	setItemPrice: protectedProcedure
+		.input(
+			z.object({
+				id: z.number(),
+				price: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id, price } = input;
+
+			const updatedItem = await ctx.prisma.pattern.update({
+				where: { id },
+				data: { price },
+			});
+
+			if (!updatedItem) throw new Error('Item not found');
+
+			return updatedItem;
+		}),
 });
 
 export const itemRouter = createTRPCRouter({

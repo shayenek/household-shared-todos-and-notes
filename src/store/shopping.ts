@@ -39,6 +39,12 @@ export interface ShoppingState {
 
 	finishedItemsGrouped: ItemGrouped[];
 	setFinishedItemsGrouped: (finishedItemsGrouped: ItemGrouped[]) => void;
+
+	currentPatternPriceInputId: number;
+	setCurrentPatternPriceInputId: (currentPatternPriceInputId: number) => void;
+
+	nextPatternPriceInputId: number;
+	setNextPatternPriceInputId: (nextPatternPriceInputId: number) => void;
 }
 
 export const useShoppingStore = create<ShoppingState>()(
@@ -84,5 +90,12 @@ export const useShoppingStore = create<ShoppingState>()(
 
 		finishedItemsGrouped: [],
 		setFinishedItemsGrouped: (finishedItemsGrouped) => set({ finishedItemsGrouped }),
+
+		currentPatternPriceInputId: -1,
+		setCurrentPatternPriceInputId: (currentPatternPriceInputId) =>
+			set({ currentPatternPriceInputId }),
+
+		nextPatternPriceInputId: -1,
+		setNextPatternPriceInputId: (nextPatternPriceInputId) => set({ nextPatternPriceInputId }),
 	}))
 );

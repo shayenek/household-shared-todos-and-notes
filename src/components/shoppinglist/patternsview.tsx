@@ -11,10 +11,13 @@ export const PatternsView = () => {
 	const [patternsGrouped, setPatternsGrouped] = useState<PatternGrouped[]>([]);
 	const [inputValue, setInputValue] = useState('');
 
-	const { patterns, categories } = useShoppingStore((state) => ({
-		patterns: state.patterns,
-		categories: state.categories,
-	}));
+	const { patterns, categories, currentPatternPriceInputId, nextPatternPriceInputId } =
+		useShoppingStore((state) => ({
+			patterns: state.patterns,
+			categories: state.categories,
+			currentPatternPriceInputId: state.currentPatternPriceInputId,
+			nextPatternPriceInputId: state.nextPatternPriceInputId,
+		}));
 
 	useEffect(() => {
 		if (patterns.length > 0 && categories.length > 0) {
@@ -42,6 +45,20 @@ export const PatternsView = () => {
 		}
 	}, [inputValue, patterns, categories]);
 
+	useEffect(() => {
+		if (currentPatternPriceInputId) {
+			console.log('chuj');
+			const currentItemIndex = patternsGrouped
+				.flatMap((group) => group.items)
+				.findIndex((item) => item.id === currentPatternPriceInputId);
+			const nextItemIndex = currentItemIndex + 1;
+			useShoppingStore.setState({
+				nextPatternPriceInputId: patternsGrouped.flatMap((group) => group.items)[
+					nextItemIndex
+				]?.id,
+			});
+		}
+	}, [currentPatternPriceInputId]);
 	return (
 		<>
 			<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
@@ -108,6 +125,9 @@ export const PatternsView = () => {
 												<PatternItemEl
 													key={`${item.name}-shopping`}
 													item={item}
+													shouldBeFocused={
+														item.id === nextPatternPriceInputId
+													}
 												/>
 											))}
 									</div>

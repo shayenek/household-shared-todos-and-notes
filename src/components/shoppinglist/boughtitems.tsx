@@ -1,9 +1,9 @@
 import { useShoppingStore } from '~/store/shopping';
 
-import { ShoppingItemEl } from './shoppingitem';
+import { ItemEl } from './item';
 
 export const BoughtItems = ({ handleItemCheck }: { handleItemCheck: (id: number) => void }) => {
-	const items = useShoppingStore((state) => state.finishedShoppingList);
+	const items = useShoppingStore((state) => state.finishedItemsGrouped);
 	return (
 		<>
 			{items.length > 0 && (
@@ -32,7 +32,7 @@ export const BoughtItems = ({ handleItemCheck }: { handleItemCheck: (id: number)
 										<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 										{group.items &&
 											group.items.map((item) => (
-												<ShoppingItemEl
+												<ItemEl
 													key={`${item.name}shopping`}
 													item={item}
 													onItemCheck={() => handleItemCheck(item.id)}

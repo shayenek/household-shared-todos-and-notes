@@ -1,8 +1,8 @@
 import { useShoppingStore } from '~/store/shopping';
 
-import { ShoppingItemEl } from './shoppingitem';
+import { ItemEl } from './item';
 
-export const ShoppingItemsList = ({
+export const ItemsListEl = ({
 	handleItemDeletion,
 	handleItemCheck,
 	handleQuantityChange,
@@ -11,7 +11,7 @@ export const ShoppingItemsList = ({
 	handleItemCheck: (id: number) => void;
 	handleQuantityChange: (id: number, quantity: number) => void;
 }) => {
-	const items = useShoppingStore((state) => state.shoppingItemsGrouped);
+	const items = useShoppingStore((state) => state.itemsGrouped);
 	const clicksOnListBlocked = useShoppingStore((state) => state.clicksOnListBlocked);
 	return (
 		<>
@@ -38,7 +38,7 @@ export const ShoppingItemsList = ({
 								<hr className="my-1 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
 								{group.items &&
 									group.items.map((item) => (
-										<ShoppingItemEl
+										<ItemEl
 											key={`${item.name}shopping`}
 											item={item}
 											onItemDeletion={() => handleItemDeletion(item.id)}

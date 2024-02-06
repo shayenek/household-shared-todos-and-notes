@@ -2,20 +2,21 @@ import { Popover } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { IconDots } from '@tabler/icons-react';
 
+import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
 export const BottomMenu = ({
 	markAllChecked,
 	clearShoppingList,
-	handleSetAllDatabaseItemsWeightToOne,
+	setAllPatternsWeightToOne,
 }: {
 	markAllChecked: () => void;
 	clearShoppingList: () => void;
-	handleSetAllDatabaseItemsWeightToOne: () => void;
+	setAllPatternsWeightToOne: () => void;
 }) => {
-	const clearShoppingListItems = api.shoppingList.clearShoppingList.useMutation();
+	const clearItemsList = api.item.clearItems.useMutation();
 
-	const handleClearShoppingList = () => {
+	const handleClearItemsList = () => {
 		modals.openConfirmModal({
 			title: 'Do you really wanna delete all shopping list items?',
 			styles: {
@@ -41,11 +42,13 @@ export const BottomMenu = ({
 			centered: true,
 			labels: { confirm: 'Confirm', cancel: 'Cancel' },
 			onConfirm: () => {
-				clearShoppingListItems.mutate();
+				clearItemsList.mutate();
 				clearShoppingList();
 			},
 		});
 	};
+
+	const patternsView = useShoppingStore.getState().patternsView;
 
 	return (
 		<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
@@ -53,12 +56,14 @@ export const BottomMenu = ({
 				<button
 					className="w-32 rounded-lg bg-blue-500 py-2 text-sm font-bold text-white opacity-100 hover:bg-blue-800"
 					onClick={() => markAllChecked()}
+					disabled={patternsView}
 				>
 					Mark all checked
 				</button>
 				<button
 					className="w-32 rounded-lg bg-red-500 py-2 text-sm font-bold text-white opacity-100 hover:bg-red-800"
-					onClick={() => handleClearShoppingList()}
+					onClick={() => handleClearItemsList()}
+					disabled={patternsView}
 				>
 					Clear list
 				</button>
@@ -71,7 +76,15 @@ export const BottomMenu = ({
 					<Popover.Dropdown>
 						<button
 							className="w-full rounded-lg bg-gray-500 py-2 text-sm font-bold text-white opacity-100 hover:bg-gray-800"
-							onClick={() => handleSetAllDatabaseItemsWeightToOne}
+							onClick={() =>
+								useShoppingStore.setState({ patternsView: !patternsView })
+							}
+						>
+							{patternsView ? 'Show items list' : 'Show patterns list'}
+						</button>
+						<button
+							className="hover:bg-gray-80 mt-2 w-full rounded-lg bg-gray-500 py-2 text-sm font-bold text-white opacity-100"
+							onClick={() => setAllPatternsWeightToOne}
 						>
 							Set all weight to 1
 						</button>

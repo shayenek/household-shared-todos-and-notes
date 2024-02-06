@@ -1,5 +1,5 @@
 import { Button, Modal, TextInput } from '@mantine/core';
-import { type ShoppingCategoriesList } from '@prisma/client';
+import { type Category } from '@prisma/client';
 import { useState } from 'react';
 
 import { api } from '~/utils/api';
@@ -10,13 +10,13 @@ export const CategoriesModal = ({
 	modalOpened,
 	closeModal,
 }: {
-	categoriesList: ShoppingCategoriesList[];
-	onCategorySelection: (category: ShoppingCategoriesList, refreshCategoriesList: boolean) => void;
+	categoriesList: Category[];
+	onCategorySelection: (category: Category, refreshCategoriesList: boolean) => void;
 	modalOpened: boolean;
 	closeModal: () => void;
 }) => {
 	const [inputVal, setInputVal] = useState('');
-	const createCategory = api.shoppingDatabase.createNewCategory.useMutation();
+	const createCategory = api.pattern.createNewCategory.useMutation();
 
 	const handleNewCategory = () => {
 		createCategory.mutate(

@@ -1,12 +1,12 @@
 import { Button, Select, TextInput } from '@mantine/core';
-import { type ShoppingItem, type ShoppingCategoriesList } from '@prisma/client';
+import { type Item, type Category } from '@prisma/client';
 import { useEffect, useState } from 'react';
 
 import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
 import { CategoriesWindow } from './categorieswindow';
-import { DatabaseItemsList } from './databaseitemslist';
+import { PatternsDropdown } from './patternsdropdown';
 
 export const SearchBar = () => {
 	const { totalPriceForItems, amountValue, searchItemInputVal, selectedItem, addButtonClicked } =
@@ -18,7 +18,7 @@ export const SearchBar = () => {
 			addButtonClicked: state.addButtonClicked,
 		}));
 
-	const createDatabaseItem = api.shoppingDatabase.createNewItem.useMutation();
+	const createDatabaseItem = api.pattern.createNewItem.useMutation();
 
 	const [inputValue, setInputValue] = useState('');
 
@@ -26,9 +26,9 @@ export const SearchBar = () => {
 		setInputValue(searchItemInputVal);
 	}, [searchItemInputVal]);
 
-	const handleNewItemState = (newShoppingItem: ShoppingItem) => {
+	const handleNewItemState = (newShoppingItem: Item) => {
 		useShoppingStore.setState({
-			shoppingList: [...useShoppingStore.getState().shoppingList, newShoppingItem],
+			items: [...useShoppingStore.getState().items, newShoppingItem],
 			amountValue: 1,
 			selectedItem: null,
 			searchInputVal: '',
@@ -36,10 +36,7 @@ export const SearchBar = () => {
 		});
 	};
 
-	const handleNewItemCategorySelection = (
-		category: ShoppingCategoriesList,
-		refreshCategoriesList: boolean
-	) => {
+	const handleNewItemCategorySelection = (category: Category, refreshCategoriesList: boolean) => {
 		const newDatabaseItem = {
 			name: searchItemInputVal,
 			categoryId: category.id,
@@ -65,16 +62,13 @@ export const SearchBar = () => {
 					};
 					handleNewItemState(newShoppingItem);
 					useShoppingStore.setState({
-						shoppingDatabase: [...useShoppingStore.getState().shoppingDatabase, data],
+						patterns: [...useShoppingStore.getState().patterns, data],
 						isCategoriesModalOpen: false,
 					});
 
 					if (refreshCategoriesList) {
 						useShoppingStore.setState({
-							shoppingCategories: [
-								...useShoppingStore.getState().shoppingCategories,
-								category,
-							],
+							categories: [...useShoppingStore.getState().categories, category],
 						});
 					}
 				},
@@ -98,7 +92,7 @@ export const SearchBar = () => {
 				</div>
 			</div>
 			<hr className="my-2 mt-3 border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
-			<div className="relative flex justify-between gap-2">
+			<div className="searchbar | relative flex justify-between gap-2">
 				<div className="w-full flex-auto md:relative">
 					<TextInput
 						placeholder="Nazwa"
@@ -111,24 +105,18 @@ export const SearchBar = () => {
 							});
 						}}
 						onClick={() => {
-							useShoppingStore.setState({ showDatabaseList: true });
+							useShoppingStore.setState({ showPatternsList: true });
 							useShoppingStore.setState({ clicksOnListBlocked: true });
 						}}
 						onBlur={() => {
-							setTimeout(() => {
-								// useShoppingStore.setState({ showDatabaseList: false });
-								// useShoppingStore.setState({ clicksOnListBlocked: false });
-								useShoppingStore.setState({
-									showDatabaseList: false,
-									clicksOnListBlocked: false,
-								});
-							}, 200);
+							useShoppingStore.setState({
+								showPatternsList: false,
+								clicksOnListBlocked: false,
+							});
 						}}
 						onMouseDown={() => {
-							setTimeout(() => {
-								useShoppingStore.setState({ showDatabaseList: true });
-								useShoppingStore.setState({ clicksOnListBlocked: true });
-							}, 200);
+							useShoppingStore.setState({ showPatternsList: true });
+							useShoppingStore.setState({ clicksOnListBlocked: true });
 						}}
 						onSubmitCapture={() => {
 							if (selectedItem) {
@@ -153,7 +141,7 @@ export const SearchBar = () => {
 							)
 						}
 					/>
-					<DatabaseItemsList newItemState={handleNewItemState} />
+					<PatternsDropdown newItemState={handleNewItemState} />
 				</div>
 				<Select
 					data={[

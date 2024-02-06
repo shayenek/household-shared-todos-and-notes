@@ -1,11 +1,11 @@
 import { modals } from '@mantine/modals';
-import { type ShoppingItem } from '@prisma/client';
+import { type Item } from '@prisma/client';
 import { IconCheck } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
 import { api } from '~/utils/api';
 
-export const ShoppingItemEl = ({
+export const ItemEl = ({
 	className,
 	item,
 	onItemDeletion,
@@ -14,7 +14,7 @@ export const ShoppingItemEl = ({
 	done,
 }: {
 	className?: string;
-	item: ShoppingItem;
+	item: Item;
 	onItemDeletion?: () => void;
 	onItemCheck?: () => void;
 	onQuantityChange?: (id: number, quantity: number) => void;
@@ -22,9 +22,9 @@ export const ShoppingItemEl = ({
 }) => {
 	const [checked, setChecked] = useState(false);
 	const [itemQuantity, setItemQuantity] = useState(item.quantity);
-	const checkItem = api.shoppingList.checkItem.useMutation();
-	const updateQuantity = api.shoppingList.updateItemQuantity.useMutation();
-	const deleteItem = api.shoppingList.deleteItemFromList.useMutation();
+	const checkItem = api.item.checkItem.useMutation();
+	const updateQuantity = api.item.updateItemQuantity.useMutation();
+	const deleteItem = api.item.deleteItemFromList.useMutation();
 
 	const handleCheck = () => {
 		setChecked(!checked);
@@ -117,7 +117,7 @@ export const ShoppingItemEl = ({
 						/>
 					</div>
 					<span className="text-xs text-[#030910] dark:text-white md:text-base">
-						{item.name}
+						{item.name.charAt(0).toUpperCase() + item.name.slice(1)}
 					</span>
 				</div>
 			</div>

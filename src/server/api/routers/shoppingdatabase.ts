@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
 import { pusherServerClient } from '~/server/pusher';
 
-export const shoppingDatabaseRouter = createTRPCRouter({
+export const patternRouter = createTRPCRouter({
 	getCategories: protectedProcedure.query(async ({ ctx }) => {
-		const categories = await ctx.prisma.shoppingCategoriesList.findMany();
+		const categories = await ctx.prisma.category.findMany();
 
 		return categories;
 	}),
@@ -16,19 +16,14 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const lastCategoryInDatabase = await ctx.prisma.shoppingCategoriesList.findFirst({
-				orderBy: {
-					id: 'desc',
-				},
+			const lastCategoryInDatabase = await ctx.prisma.category.findFirst({
+				orderBy: { id: 'desc' },
 			});
 
-			const newCategoryId = lastCategoryInDatabase ? lastCategoryInDatabase.id + 1 : 1;
+			const newCategoryId = (lastCategoryInDatabase?.id || 0) + 1;
 
-			const newCategory = await ctx.prisma.shoppingCategoriesList.create({
-				data: {
-					id: newCategoryId,
-					name: input.name,
-				},
+			const newCategory = await ctx.prisma.category.create({
+				data: { id: newCategoryId, name: input.name },
 			});
 
 			return newCategory;
@@ -40,12 +35,10 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			})
 		)
 		.query(async ({ input, ctx }) => {
-			const searchTerm = input.searchTerm;
-
-			const searchResults = await ctx.prisma.shoppingDataBase.findMany({
+			const searchResults = await ctx.prisma.pattern.findMany({
 				where: {
 					name: {
-						contains: searchTerm,
+						contains: input.searchTerm,
 					},
 				},
 			});
@@ -53,27 +46,17 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			return searchResults;
 		}),
 	getAllItems: protectedProcedure.query(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingDataBase.findMany();
+		const allItems = await ctx.prisma.pattern.findMany();
 
 		return allItems;
 	}),
 	getAllItemsWithoutShoppingItems: protectedProcedure.query(async ({ ctx }) => {
-		const shoppingItems = await ctx.prisma.shoppingItem.findMany();
+		const shoppingItemsIds = (await ctx.prisma.item.findMany()).map((item) => item.id);
 
-		const shoppingItemsIds = shoppingItems.map((item) => item.id);
-
-		const allItems = await ctx.prisma.shoppingDataBase.findMany({
-			where: {
-				id: {
-					notIn: shoppingItemsIds,
-				},
-			},
-			orderBy: {
-				weight: 'desc',
-			},
+		return ctx.prisma.pattern.findMany({
+			where: { id: { notIn: shoppingItemsIds } },
+			orderBy: { weight: 'desc' },
 		});
-
-		return allItems;
 	}),
 	createNewItem: protectedProcedure
 		.input(
@@ -87,42 +70,40 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const lastItemInDatabase = await ctx.prisma.shoppingDataBase.findFirst({
-				orderBy: {
-					id: 'desc',
-				},
+			const lastItemInDatabase = await ctx.prisma.pattern.findFirst({
+				orderBy: { id: 'desc' },
 			});
 
-			const newItemId = lastItemInDatabase ? lastItemInDatabase.id + 1 : 1;
+			const newItemId = (lastItemInDatabase?.id || 0) + 1;
 
-			const newItem = await ctx.prisma.shoppingDataBase.create({
-				data: {
-					id: newItemId,
-					name: input.dataBaseObject.name,
-					categoryId: input.dataBaseObject.categoryId,
-					location: null,
-					createdAt: new Date(),
-					updatedAt: new Date(),
-					weight: 1,
-					price: 0,
-				},
+			const newDataBaseObject = {
+				id: newItemId,
+				name: input.dataBaseObject.name,
+				categoryId: input.dataBaseObject.categoryId,
+				location: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				weight: 1,
+				price: 0,
+			};
+
+			const newItem = await ctx.prisma.pattern.create({
+				data: newDataBaseObject,
 			});
 
 			if (input.createNewShoppingItem) {
-				await ctx.prisma.shoppingItem.create({
+				await ctx.prisma.item.create({
 					data: {
-						id: newItemId,
-						name: input.dataBaseObject.name,
+						...newDataBaseObject,
 						quantity: input.dataBaseObject.quantity,
-						categoryId: input.dataBaseObject.categoryId,
 						checked: false,
-						price: 0,
 					},
 				});
 			}
 
 			return newItem;
 		}),
+
 	getItemByName: protectedProcedure
 		.input(
 			z.object({
@@ -132,7 +113,7 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 		.query(async ({ input, ctx }) => {
 			const itemName = input.name;
 
-			const item = await ctx.prisma.shoppingDataBase.findFirst({
+			const item = await ctx.prisma.pattern.findFirst({
 				where: {
 					name: itemName,
 				},
@@ -145,24 +126,8 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 			return item;
 		}),
 	setAllItemsWeightToOne: protectedProcedure.mutation(async ({ ctx }) => {
-		// const allItems = await ctx.prisma.shoppingDataBase.findMany();
-
-		// const updatedItems = allItems.map((item) => {
-		// 	return ctx.prisma.shoppingDataBase.update({
-		// 		where: {
-		// 			id: item.id,
-		// 		},
-		// 		data: {
-		// 			weight: 1,
-		// 		},
-		// 	});
-		// });
-
-		// await Promise.all(updatedItems);
-
-		// return true;
-		await ctx.prisma.shoppingDataBase.updateMany({
-			where: {}, // Empty where clause to update all items
+		await ctx.prisma.pattern.updateMany({
+			where: {},
 			data: {
 				weight: 1,
 			},
@@ -170,11 +135,47 @@ export const shoppingDatabaseRouter = createTRPCRouter({
 
 		return true;
 	}),
+	setItemWeight: protectedProcedure
+		.input(
+			z.object({
+				id: z.number(),
+				weight: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id, weight } = input;
+
+			const updatedItem = await ctx.prisma.pattern.update({
+				where: { id },
+				data: { weight },
+			});
+
+			if (!updatedItem) throw new Error('Item not found');
+
+			return updatedItem;
+		}),
+	deleteItem: protectedProcedure
+		.input(
+			z.object({
+				id: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id } = input;
+
+			const deletedItem = await ctx.prisma.pattern.delete({
+				where: { id },
+			});
+
+			if (!deletedItem) throw new Error('Item not found');
+
+			return deletedItem;
+		}),
 });
 
-export const shoppingListRouter = createTRPCRouter({
+export const itemRouter = createTRPCRouter({
 	getAllItems: protectedProcedure.query(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingItem.findMany({
+		const allItems = await ctx.prisma.item.findMany({
 			orderBy: {
 				createdAt: 'asc',
 			},
@@ -183,13 +184,13 @@ export const shoppingListRouter = createTRPCRouter({
 		return allItems;
 	}),
 	getAllShoppingItemsSortedByDatabaseItemsWeight: protectedProcedure.query(async ({ ctx }) => {
-		const allShoppingItems = await ctx.prisma.shoppingItem.findMany({
+		const allShoppingItems = await ctx.prisma.item.findMany({
 			orderBy: {
 				createdAt: 'asc',
 			},
 		});
 
-		const allDatabaseItems = await ctx.prisma.shoppingDataBase.findMany();
+		const allDatabaseItems = await ctx.prisma.pattern.findMany();
 
 		const sortedItems = allShoppingItems.sort((a, b) => {
 			const aWeight = allDatabaseItems.find((item) => item.id === a.id)?.weight;
@@ -210,44 +211,37 @@ export const shoppingListRouter = createTRPCRouter({
 			})
 		)
 		.mutation(async ({ input, ctx }) => {
-			const itemId = input.id;
+			const { id, quantity } = input;
 
-			const item = await ctx.prisma.shoppingDataBase.findUnique({
-				where: {
-					id: itemId,
-				},
+			const item = await ctx.prisma.pattern.findUnique({
+				where: { id },
 			});
 
-			if (!item) {
-				throw new Error('Item not found');
-			}
+			if (!item) throw new Error('Item not found');
 
-			const newshoppingItem = await ctx.prisma.shoppingItem.create({
+			const newshoppingItem = await ctx.prisma.item.create({
 				data: {
-					id: itemId,
+					id,
 					name: item.name,
-					quantity: input.quantity,
+					quantity,
 					categoryId: item.categoryId,
 					checked: false,
 					price: 0,
 				},
 			});
 
-			const updateWeight = await ctx.prisma.shoppingDataBase.update({
-				where: {
-					id: itemId,
-				},
-				data: {
-					weight: Number(item.weight) + 1,
-				},
+			await ctx.prisma.pattern.update({
+				where: { id },
+				data: { weight: Number(item.weight) + 1 },
 			});
 
 			await pusherServerClient.trigger(`user-shayenek`, 'new-shopping-item', {
 				shoppingItem: newshoppingItem,
 			});
 
-			return updateWeight;
+			return { id, weight: Number(item.weight) + 1 };
 		}),
+
 	checkItem: protectedProcedure
 		.input(
 			z.object({
@@ -258,7 +252,7 @@ export const shoppingListRouter = createTRPCRouter({
 		.mutation(async ({ input, ctx }) => {
 			const { id, checked } = input;
 
-			const newItem = await ctx.prisma.shoppingItem.update({
+			const newItem = await ctx.prisma.item.update({
 				where: { id },
 				data: { checked },
 			});
@@ -272,7 +266,7 @@ export const shoppingListRouter = createTRPCRouter({
 			return newItem;
 		}),
 	markAllChecked: protectedProcedure.mutation(async ({ ctx }) => {
-		await ctx.prisma.shoppingItem.updateMany({
+		await ctx.prisma.item.updateMany({
 			where: {},
 			data: {
 				checked: true,
@@ -280,11 +274,6 @@ export const shoppingListRouter = createTRPCRouter({
 		});
 
 		return true;
-	}),
-	clearShoppingList: protectedProcedure.mutation(async ({ ctx }) => {
-		const allItems = await ctx.prisma.shoppingItem.deleteMany();
-
-		return allItems;
 	}),
 	deleteItemFromList: protectedProcedure
 		.input(
@@ -295,7 +284,7 @@ export const shoppingListRouter = createTRPCRouter({
 		.mutation(async ({ input, ctx }) => {
 			const { id } = input;
 
-			const deletedItem = await ctx.prisma.shoppingItem.delete({
+			const deletedItem = await ctx.prisma.item.delete({
 				where: { id },
 			});
 
@@ -318,7 +307,7 @@ export const shoppingListRouter = createTRPCRouter({
 		.mutation(async ({ input, ctx }) => {
 			const { id, quantity } = input;
 
-			const updatedItem = await ctx.prisma.shoppingItem.update({
+			const updatedItem = await ctx.prisma.item.update({
 				where: { id },
 				data: { quantity },
 			});
@@ -331,24 +320,13 @@ export const shoppingListRouter = createTRPCRouter({
 
 			return updatedItem;
 		}),
+	clearItems: protectedProcedure.mutation(async ({ ctx }) => {
+		await ctx.prisma.item.deleteMany({});
 
-	getPriceForEntireGroupOfItems: protectedProcedure
-		.input(
-			z.object({
-				categoryId: z.number(),
-			})
-		)
-		.mutation(async ({ input, ctx }) => {
-			const items = await ctx.prisma.shoppingItem.findMany({
-				where: {
-					categoryId: input.categoryId,
-				},
-			});
+		await pusherServerClient.trigger(`user-shayenek`, 'shopping-items-cleared', {
+			shoppingItem: null,
+		});
 
-			const priceForItems = items.reduce((acc, item) => {
-				return acc + item.quantity * item.price;
-			}, 0);
-
-			return priceForItems;
-		}),
+		return true;
+	}),
 });

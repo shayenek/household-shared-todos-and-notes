@@ -1,8 +1,14 @@
-import { type ShoppingItem } from '@prisma/client';
+import { type Pattern, type Item } from '@prisma/client';
 
-export type ShoppingItemsGrouped = {
+export type ItemGrouped = {
 	categoryId: number;
 	categoryName: string;
 	priceForItems: number;
-	items: ShoppingItem[];
+	items: Item[];
+};
+
+export type PatternGrouped = {
+	categoryId: number;
+	categoryName: string;
+	items: Pattern[];
 };

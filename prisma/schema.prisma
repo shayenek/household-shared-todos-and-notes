@@ -8,12 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Example {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -92,16 +86,16 @@ model Codesession {
   expires      DateTime
 }
 
-model ShoppingCategoriesList {
+model Category {
   id        Int                @id @unique
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
   name      String
-  database  ShoppingDataBase[]
-  items     ShoppingItem[]
+  database  Pattern[]
+  items     Item[]
 }
 
-model ShoppingDataBase {
+model Pattern {
   id         Int                    @id @unique
   createdAt  DateTime               @default(now())
   updatedAt  DateTime               @updatedAt
@@ -110,10 +104,10 @@ model ShoppingDataBase {
   weight     Int                    @default(1)
   categoryId Int
   price      Float                  @default(0) @db.Real
-  category   ShoppingCategoriesList @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
 }
 
-model ShoppingItem {
+model Item {
   id         Int                    @id @unique
   createdAt  DateTime               @default(now())
   updatedAt  DateTime               @updatedAt
@@ -123,5 +117,5 @@ model ShoppingItem {
   location   String?
   name       String
   price      Float                  @db.Real
-  category   ShoppingCategoriesList @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
 }

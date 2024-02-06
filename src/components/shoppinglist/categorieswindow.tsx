@@ -1,5 +1,5 @@
 import { Button, TextInput } from '@mantine/core';
-import { type ShoppingCategoriesList } from '@prisma/client';
+import { type Category } from '@prisma/client';
 import { useEffect, useRef, useState } from 'react';
 
 import { useShoppingStore } from '~/store/shopping';
@@ -10,21 +10,21 @@ import { DialogWindow } from './dialogwindow';
 export const CategoriesWindow = ({
 	onCategorySelection,
 }: {
-	onCategorySelection: (category: ShoppingCategoriesList, refreshCategoriesList: boolean) => void;
+	onCategorySelection: (category: Category, refreshCategoriesList: boolean) => void;
 }) => {
 	const { isCategoriesModalOpen, shoppingCategories: categoriesList } = useShoppingStore(
 		(state) => ({
 			isCategoriesModalOpen: state.isCategoriesModalOpen,
-			shoppingCategories: state.shoppingCategories,
+			shoppingCategories: state.categories,
 		})
 	);
 
 	const [inputVal, setInputVal] = useState('');
 	const [filteredCategoriesList, setFilteredCategoriesList] = useState(categoriesList);
-	const [selectedItem, setSelectedItem] = useState<ShoppingCategoriesList | null>(null);
+	const [selectedItem, setSelectedItem] = useState<Category | null>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const createCategory = api.shoppingDatabase.createNewCategory.useMutation();
+	const createCategory = api.pattern.createNewCategory.useMutation();
 
 	const handleNewCategory = () => {
 		createCategory.mutate(

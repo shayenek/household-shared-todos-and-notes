@@ -1,78 +1,45 @@
 import { Loader } from '@mantine/core';
-import {
-	type ShoppingItem,
-	type ShoppingDataBase,
-	type ShoppingCategoriesList,
-} from '@prisma/client';
+import { type Item, type Pattern } from '@prisma/client';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useShoppingStore } from '~/store/shopping';
-import { type ShoppingItemsGrouped } from '~/types/shoppinglist';
 import { api } from '~/utils/api';
 import { useSubscribeToEvent } from '~/utils/pusher';
 
 import { BottomMenu } from './bottommenu';
 import { BoughtItems } from './boughtitems';
+import { groupByCategory } from './helpers';
+import { ItemsListEl } from './itemslist';
+import { PatternsView } from './patternsview';
 import { SearchBar } from './searchbar';
-import { ShoppingItemsList } from './shoppingitemslist';
 
 export const ShoppingList = () => {
 	const [isLoading, setIsLoading] = useState(true);
 
-	const { categoriesList, shoppingListItems } = useShoppingStore((state) => ({
-		categoriesList: state.shoppingCategories,
-		shoppingListItems: state.shoppingList,
+	const { categories, items, patterns } = useShoppingStore((state) => ({
+		categories: state.categories,
+		items: state.items,
+		patterns: state.patterns,
 	}));
 
-	const itemCategories = api.shoppingDatabase.getCategories.useQuery();
-	const allDatabaseItems = api.shoppingDatabase.getAllItems.useQuery();
-	const filteredDatabaseItems = api.shoppingDatabase.getAllItemsWithoutShoppingItems.useQuery();
+	const itemCategories = api.pattern.getCategories.useQuery();
+	const allDatabaseItems = api.pattern.getAllItems.useQuery();
+	const filteredDatabaseItems = api.pattern.getAllItemsWithoutShoppingItems.useQuery();
 	const allShoppingListItemsByWeight =
-		api.shoppingList.getAllShoppingItemsSortedByDatabaseItemsWeight.useQuery();
-	const setAllDatabaseItemsWeightToOne =
-		api.shoppingDatabase.setAllItemsWeightToOne.useMutation();
-	const checkShoppingItem = api.shoppingList.checkItem.useMutation();
-	const markAllItemsChecked = api.shoppingList.markAllChecked.useMutation();
-
-	const groupByCategory = useCallback(
-		(list: ShoppingItem[], categoryList: ShoppingCategoriesList[]) => {
-			const uniqueCategoryIds = new Set<number>();
-
-			return categoryList.reduce((result, category) => {
-				if (!uniqueCategoryIds.has(category.id)) {
-					uniqueCategoryIds.add(category.id);
-
-					const priceForItems = list
-						.filter((item) => item.categoryId === category.id)
-						.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-					const groupedItems: ShoppingItemsGrouped = {
-						categoryId: category.id,
-						categoryName: category.name,
-						priceForItems: priceForItems,
-						items: list.filter((item) => item.categoryId === category.id),
-					};
-
-					if (groupedItems.items.length > 0) {
-						result.push(groupedItems);
-					}
-				}
-
-				return result;
-			}, [] as ShoppingItemsGrouped[]);
-		},
-		[]
-	);
+		api.item.getAllShoppingItemsSortedByDatabaseItemsWeight.useQuery();
+	const setAllDatabaseItemsWeightToOne = api.pattern.setAllItemsWeightToOne.useMutation();
+	const checkShoppingItem = api.item.checkItem.useMutation();
+	const markAllItemsChecked = api.item.markAllChecked.useMutation();
 
 	useEffect(() => {
 		if (itemCategories.data) {
-			useShoppingStore.setState({ shoppingCategories: itemCategories.data });
+			useShoppingStore.setState({ categories: itemCategories.data });
 		}
 		if (allDatabaseItems.data) {
-			useShoppingStore.setState({ shoppingDatabase: allDatabaseItems.data });
+			useShoppingStore.setState({ patterns: allDatabaseItems.data });
 		}
 		if (allShoppingListItemsByWeight.data) {
-			useShoppingStore.setState({ shoppingList: allShoppingListItemsByWeight.data });
+			useShoppingStore.setState({ items: allShoppingListItemsByWeight.data });
 			useShoppingStore.setState({
 				totalPrice: allShoppingListItemsByWeight.data.reduce(
 					(sum, item) => sum + item.price * item.quantity,
@@ -82,7 +49,7 @@ export const ShoppingList = () => {
 		}
 		if (filteredDatabaseItems.data) {
 			useShoppingStore.setState({
-				shoppingDatabaseFiltered: filteredDatabaseItems.data,
+				patternsFiltered: filteredDatabaseItems.data,
 			});
 		}
 		setTimeout(() => {
@@ -96,8 +63,8 @@ export const ShoppingList = () => {
 	]);
 
 	useEffect(() => {
-		if (shoppingListItems && categoriesList) {
-			const groupedByCategory = groupByCategory(shoppingListItems, categoriesList);
+		if (items && categories) {
+			const groupedByCategory = groupByCategory(items, categories);
 			const unfinishedGroups = groupedByCategory.filter((group) => {
 				return group.items.some((item) => !item.checked);
 			});
@@ -105,34 +72,37 @@ export const ShoppingList = () => {
 				return group.items.every((item) => item.checked);
 			});
 			useShoppingStore.setState({
-				shoppingItemsGrouped: unfinishedGroups,
-				finishedShoppingList: finishedGroups,
-				totalPrice: shoppingListItems.reduce(
-					(sum, item) => sum + item.price * item.quantity,
-					0
-				),
+				itemsGrouped: unfinishedGroups,
+				finishedItemsGrouped: finishedGroups,
+				totalPrice: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 			});
 		}
-	}, [shoppingListItems, categoriesList, groupByCategory]);
+	}, [items, categories]);
+
+	useEffect(() => {
+		if (patterns) {
+			useShoppingStore.setState({
+				patterns: patterns.sort((a, b) => b.weight - a.weight),
+			});
+		}
+	}, [patterns]);
 
 	const handleItemDeletion = (id: number) => {
-		const deletedItem = useShoppingStore
-			.getState()
-			.shoppingDatabase.find((item) => item.id === id);
+		const deletedItem = useShoppingStore.getState().patterns.find((item) => item.id === id);
 		const newshoppingDatabaseItems = [
-			...useShoppingStore.getState().shoppingDatabaseFiltered,
-			deletedItem as ShoppingDataBase,
+			...useShoppingStore.getState().patternsFiltered,
+			deletedItem as Pattern,
 		];
 		useShoppingStore.setState({
-			shoppingDatabaseFiltered: newshoppingDatabaseItems.sort((a, b) => b.weight - a.weight),
-			shoppingList: shoppingListItems.filter((item) => item.id !== id),
+			patternsFiltered: newshoppingDatabaseItems.sort((a, b) => b.weight - a.weight),
+			items: useShoppingStore.getState().items.filter((item) => item.id !== id),
 		});
 	};
 
 	const handleItemCheck = useCallback(
 		(id: number) => {
 			useShoppingStore.setState({
-				shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+				items: useShoppingStore.getState().items.map((item) => {
 					if (item.id === id) {
 						item.checked = !item.checked;
 						checkShoppingItem.mutate({ id, checked: item.checked });
@@ -146,16 +116,16 @@ export const ShoppingList = () => {
 
 	const clearShoppingList = () => {
 		useShoppingStore.setState({
-			shoppingDatabaseFiltered: useShoppingStore
+			patternsFiltered: useShoppingStore
 				.getState()
-				.shoppingDatabase.sort((a, b) => b.weight - a.weight),
+				.patterns.sort((a, b) => b.weight - a.weight),
 		});
-		useShoppingStore.setState({ shoppingList: [] });
+		useShoppingStore.setState({ items: [] });
 	};
 
 	const markAllChecked = () => {
 		useShoppingStore.setState({
-			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+			items: useShoppingStore.getState().items.map((item) => {
 				item.checked = true;
 				checkShoppingItem.mutate({ id: item.id, checked: item.checked });
 				return item;
@@ -167,7 +137,7 @@ export const ShoppingList = () => {
 
 	const handleQuantityChange = (id: number, quantity: number) => {
 		useShoppingStore.setState({
-			shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+			items: useShoppingStore.getState().items.map((item) => {
 				if (item.id === id) {
 					item.quantity = quantity;
 				}
@@ -176,31 +146,26 @@ export const ShoppingList = () => {
 		});
 	};
 
-	useSubscribeToEvent((eventName, data: { shoppingItem: ShoppingItem }) => {
+	useSubscribeToEvent((eventName, data: { shoppingItem: Item }) => {
 		switch (eventName) {
 			case 'new-shopping-item':
 				if (
 					!useShoppingStore
 						.getState()
-						.shoppingList.find((item) => item.id === data.shoppingItem.id)
+						.items.find((item) => item.id === data.shoppingItem.id)
 				) {
 					useShoppingStore.setState({
-						shoppingList: [
-							...useShoppingStore.getState().shoppingList,
-							data.shoppingItem,
-						],
-						shoppingDatabaseFiltered: useShoppingStore
+						items: [...useShoppingStore.getState().items, data.shoppingItem],
+						patternsFiltered: useShoppingStore
 							.getState()
-							.shoppingDatabaseFiltered.filter(
-								(item) => item.id !== data.shoppingItem.id
-							)
+							.patternsFiltered.filter((item) => item.id !== data.shoppingItem.id)
 							.sort((a, b) => b.weight - a.weight),
 					});
 				}
 				break;
 			case 'shopping-item-checked':
 				useShoppingStore.setState({
-					shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+					items: useShoppingStore.getState().items.map((item) => {
 						if (item.id === data.shoppingItem.id) {
 							item.checked = data.shoppingItem.checked;
 						}
@@ -210,29 +175,44 @@ export const ShoppingList = () => {
 				break;
 			case 'shopping-item-deleted':
 				{
+					useShoppingStore.setState({
+						items: useShoppingStore
+							.getState()
+							.items.filter((item) => item.id !== data.shoppingItem.id),
+					});
+
 					const databaseItem = useShoppingStore
 						.getState()
-						.shoppingDatabase.find((item) => item.id === data.shoppingItem.id);
-
-					useShoppingStore.setState({
-						shoppingList: useShoppingStore
-							.getState()
-							.shoppingList.filter((item) => item.id !== data.shoppingItem.id),
-						shoppingDatabaseFiltered: [
-							...useShoppingStore.getState().shoppingDatabaseFiltered,
-							databaseItem as ShoppingDataBase,
-						].sort((a, b) => b.weight - a.weight),
-					});
+						.patterns.find((item) => item.id === data.shoppingItem.id);
+					if (
+						databaseItem &&
+						!useShoppingStore.getState().patternsFiltered.includes(databaseItem)
+					) {
+						useShoppingStore.setState({
+							patternsFiltered: [
+								...useShoppingStore.getState().patternsFiltered,
+								databaseItem,
+							].sort((a, b) => b.weight - a.weight),
+						});
+					}
 				}
 				break;
 			case 'shopping-item-quantityUpdate':
 				useShoppingStore.setState({
-					shoppingList: useShoppingStore.getState().shoppingList.map((item) => {
+					items: useShoppingStore.getState().items.map((item) => {
 						if (item.id === data.shoppingItem.id) {
 							item.quantity = data.shoppingItem.quantity;
 						}
 						return item;
 					}),
+				});
+				break;
+			case 'shopping-items-cleared':
+				useShoppingStore.setState({
+					items: [],
+					patternsFiltered: useShoppingStore
+						.getState()
+						.patterns.sort((a, b) => b.weight - a.weight),
 				});
 				break;
 			default:
@@ -251,17 +231,23 @@ export const ShoppingList = () => {
 			)}
 			{!isLoading && (
 				<>
-					<SearchBar />
-					<ShoppingItemsList
-						handleItemDeletion={handleItemDeletion}
-						handleItemCheck={handleItemCheck}
-						handleQuantityChange={handleQuantityChange}
-					/>
-					<BoughtItems handleItemCheck={handleItemCheck} />
+					{useShoppingStore.getState().patternsView ? (
+						<PatternsView />
+					) : (
+						<>
+							<SearchBar />
+							<ItemsListEl
+								handleItemDeletion={handleItemDeletion}
+								handleItemCheck={handleItemCheck}
+								handleQuantityChange={handleQuantityChange}
+							/>
+							<BoughtItems handleItemCheck={handleItemCheck} />
+						</>
+					)}
 					<BottomMenu
 						markAllChecked={markAllChecked}
 						clearShoppingList={clearShoppingList}
-						handleSetAllDatabaseItemsWeightToOne={setAllDatabaseItemsWeightToOne.mutate}
+						setAllPatternsWeightToOne={setAllDatabaseItemsWeightToOne.mutate}
 					/>
 				</>
 			)}

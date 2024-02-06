@@ -152,10 +152,6 @@ export const PatternItemEl = ({
 					}}
 					onBlur={() => {
 						handleNewPrice(itemPrice);
-						useShoppingStore.setState({
-							currentPatternPriceInputId: -1,
-							nextPatternPriceInputId: -1,
-						});
 					}}
 					onSubmitCapture={() => {
 						handleNewPrice(itemPrice);

@@ -20,6 +20,13 @@ export const PatternsView = () => {
 		}));
 
 	useEffect(() => {
+		useShoppingStore.setState({
+			currentPatternPriceInputId: -1,
+			nextPatternPriceInputId: -1,
+		});
+	}, []);
+
+	useEffect(() => {
 		if (patterns.length > 0 && categories.length > 0) {
 			setPatternsGrouped(
 				patternsGroupByCategory(
@@ -47,7 +54,6 @@ export const PatternsView = () => {
 
 	useEffect(() => {
 		if (currentPatternPriceInputId) {
-			console.log('chuj');
 			const currentItemIndex = patternsGrouped
 				.flatMap((group) => group.items)
 				.findIndex((item) => item.id === currentPatternPriceInputId);

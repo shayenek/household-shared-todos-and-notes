@@ -89,3 +89,15 @@ export const filterByKeyword = (items: Pattern[], keyword: string, max?: number)
 		})
 		.slice(0, max || 10);
 };
+
+export const debounce = <F extends (...args: any[]) => any>(
+	func: F,
+	delay: number
+): ((...args: Parameters<F>) => void) => {
+	let timer: ReturnType<typeof setTimeout>;
+	return function (this: ThisParameterType<F>, ...args: Parameters<F>) {
+		clearTimeout(timer);
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		timer = setTimeout(() => func.apply(this, args), delay);
+	};
+};

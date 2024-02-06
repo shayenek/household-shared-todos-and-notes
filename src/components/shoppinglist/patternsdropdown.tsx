@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useShoppingStore } from '~/store/shopping';
 import { api } from '~/utils/api';
 
-import { filterByKeyword } from './helpers';
+import { filterByKeyword, debounce } from './helpers';
 
 export const PatternsDropdown = ({
 	newItemState,
@@ -67,6 +67,20 @@ export const PatternsDropdown = ({
 	}));
 
 	const [itemsByWord, setItemsByWord] = useState<Pattern[]>([]);
+
+	const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+	useEffect(() => {
+		const debouncedHandleResize = debounce(() => {
+			setScreenWidth(window.innerWidth);
+		}, 1000);
+
+		window.addEventListener('resize', debouncedHandleResize);
+
+		return () => {
+			window.removeEventListener('resize', debouncedHandleResize);
+		};
+	}, []);
 
 	const addItemToShoppingList = api.item.addItemToList.useMutation();
 
@@ -178,19 +192,18 @@ export const PatternsDropdown = ({
 								selectedItem: item,
 								searchInputVal: item.name,
 							});
+							if (screenWidth < 768) {
+								useShoppingStore.setState({ addButtonClicked: true });
+							}
 						}}
 						onKeyDown={() => {
 							useShoppingStore.setState({
 								selectedItem: item,
 								searchInputVal: item.name,
 							});
-						}}
-						onTouchEnd={() => {
-							useShoppingStore.setState({
-								selectedItem: item,
-								searchInputVal: item.name,
-								addButtonClicked: true,
-							});
+							if (screenWidth < 768) {
+								useShoppingStore.setState({ addButtonClicked: true });
+							}
 						}}
 						role="button"
 						tabIndex={0}

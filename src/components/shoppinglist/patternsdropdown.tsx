@@ -54,7 +54,6 @@ export const PatternsDropdown = ({
 		searchItemInputVal,
 		categoriesList,
 		filteredDatabaseItems,
-		showPatternsList,
 		selectedItem,
 		amountValue,
 		addButtonClicked,
@@ -62,7 +61,6 @@ export const PatternsDropdown = ({
 		searchItemInputVal: state.searchInputVal,
 		categoriesList: state.categories,
 		filteredDatabaseItems: state.patternsFiltered,
-		showPatternsList: state.showPatternsList,
 		selectedItem: state.selectedItem,
 		amountValue: state.amountValue,
 		addButtonClicked: state.addButtonClicked,
@@ -97,18 +95,12 @@ export const PatternsDropdown = ({
 				.concat(newDatabaseItem)
 				.filter((i) => i.id !== item.id)
 				.sort((a, b) => b.weight - a.weight),
-			showPatternsList: false,
 		});
 		newItemState(newItem);
 		addItemToShoppingList.mutate(newItem);
 	};
 
 	useEffect(() => {
-		if (searchItemInputVal.length === 0) {
-			useShoppingStore.setState({ showPatternsList: false });
-		} else {
-			useShoppingStore.setState({ showPatternsList: true });
-		}
 		if (filteredDatabaseItems) {
 			setItemsByWord(filterByKeyword(filteredDatabaseItems, searchItemInputVal, 10));
 		}
@@ -142,11 +134,7 @@ export const PatternsDropdown = ({
 			}
 		};
 
-		if (showPatternsList) {
-			document.body.addEventListener('keydown', handleKeyDown);
-		} else {
-			document.body.removeEventListener('keydown', handleKeyDown);
-		}
+		document.body.addEventListener('keydown', handleKeyDown);
 
 		return () => {
 			document.body.removeEventListener('keydown', handleKeyDown);
@@ -177,54 +165,52 @@ export const PatternsDropdown = ({
 	}, [searchItemInputVal, itemsByWord]);
 
 	return (
-		<>
-			<div className="dropdown | absolute z-50 flex w-full flex-col overflow-hidden rounded-md">
-				{itemsByWord.map((item) => (
-					<>
-						<div
-							key={item.id}
-							className={`flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910] ${
-								selectedItem?.id === item.id ? '!bg-gray-200' : ''
-							}`}
-							onClick={() => {
-								useShoppingStore.setState({
-									selectedItem: item,
-									searchInputVal: item.name,
-								});
-							}}
-							onKeyDown={() => {
-								useShoppingStore.setState({
-									selectedItem: item,
-									searchInputVal: item.name,
-								});
-							}}
-							onTouchEnd={() => {
-								useShoppingStore.setState({
-									selectedItem: item,
-									searchInputVal: item.name,
-									addButtonClicked: true,
-								});
-							}}
-							role="button"
-							tabIndex={0}
-						>
-							<div className="flex items-center justify-between">
-								<span className="text-base">
-									{item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-								</span>
-								<span className="text-xs">
-									{
-										categoriesList.find(
-											(category) => category.id === item.categoryId
-										)?.name
-									}
-								</span>
-							</div>
+		<div className="dropdown | absolute z-50 flex w-full flex-col overflow-hidden rounded-md">
+			{itemsByWord.map((item) => (
+				<>
+					<div
+						key={item.id}
+						className={`flex cursor-pointer flex-col bg-[#232527] p-2 text-[#e0e2e4] hover:!bg-gray-200 dark:bg-white dark:text-[#030910] ${
+							selectedItem?.id === item.id ? '!bg-gray-200' : ''
+						}`}
+						onClick={() => {
+							useShoppingStore.setState({
+								selectedItem: item,
+								searchInputVal: item.name,
+							});
+						}}
+						onKeyDown={() => {
+							useShoppingStore.setState({
+								selectedItem: item,
+								searchInputVal: item.name,
+							});
+						}}
+						onTouchEnd={() => {
+							useShoppingStore.setState({
+								selectedItem: item,
+								searchInputVal: item.name,
+								addButtonClicked: true,
+							});
+						}}
+						role="button"
+						tabIndex={0}
+					>
+						<div className="flex items-center justify-between">
+							<span className="text-base">
+								{item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+							</span>
+							<span className="text-xs">
+								{
+									categoriesList.find(
+										(category) => category.id === item.categoryId
+									)?.name
+								}
+							</span>
 						</div>
-						<hr className="border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
-					</>
-				))}
-			</div>
-		</>
+					</div>
+					<hr className="border-[#dce2e7] transition duration-200 ease-in-out dark:border-[#2d2f31]"></hr>
+				</>
+			))}
+		</div>
 	);
 };

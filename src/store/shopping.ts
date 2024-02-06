@@ -17,8 +17,6 @@ export interface ShoppingState {
 	setIsCategoriesModalOpen: (isCategoriesModalOpen: boolean) => void;
 	patternsView: boolean;
 	setDatabaseItemsView: (patternsView: boolean) => void;
-	showPatternsList: boolean;
-	setShowDatabaseList: (showPatternsList: boolean) => void;
 	addButtonClicked: boolean;
 	setAddButtonClicked: (addButtonClicked: boolean) => void;
 	clicksOnListBlocked: boolean;
@@ -62,9 +60,6 @@ export const useShoppingStore = create<ShoppingState>()(
 
 		patternsView: false,
 		setDatabaseItemsView: (patternsView) => set({ patternsView }),
-
-		showPatternsList: false,
-		setShowDatabaseList: (showPatternsList) => set({ showPatternsList }),
 
 		addButtonClicked: false,
 		setAddButtonClicked: (addButtonClicked) => set({ addButtonClicked }),

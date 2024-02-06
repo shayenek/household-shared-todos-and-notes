@@ -105,17 +105,14 @@ export const SearchBar = () => {
 							});
 						}}
 						onClick={() => {
-							useShoppingStore.setState({ showPatternsList: true });
 							useShoppingStore.setState({ clicksOnListBlocked: true });
 						}}
 						onBlur={() => {
 							useShoppingStore.setState({
-								showPatternsList: false,
 								clicksOnListBlocked: false,
 							});
 						}}
 						onMouseDown={() => {
-							useShoppingStore.setState({ showPatternsList: true });
 							useShoppingStore.setState({ clicksOnListBlocked: true });
 						}}
 						onSubmitCapture={() => {

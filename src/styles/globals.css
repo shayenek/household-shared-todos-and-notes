@@ -41,3 +41,10 @@ body {
     background: rgb(153 27 27);
     border: 2px solid #2b3031;
 }
+
+.dropdown {
+    display: none;
+}
+.searchbar:focus-within .dropdown {
+    display: flex;
+}

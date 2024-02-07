@@ -1,5 +1,6 @@
 import { deleteCookie } from 'cookies-next';
 import { signOut, useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 
 import { CollapsibleSidebar } from '~/components/collapsiblesidebar';
 import MobileNavbar from '~/components/mobilenavbar';
@@ -12,6 +13,8 @@ import {
 	useAuthorizedUserStore,
 	useLayoutStore,
 	type LayoutState,
+	type TaskTypeState,
+	useTaskTypeStore,
 } from '~/store/store';
 
 const Logged = () => {
@@ -21,12 +24,17 @@ const Logged = () => {
 		state.layout,
 		state.isMobile,
 	]);
+	const setTaskType = useTaskTypeStore((state: TaskTypeState) => state.setTaskType);
 
 	const handleSignOut = async () => {
 		await signOut();
 		useAuthorizedUserStore.setState({ isAuthorized: false });
 		deleteCookie('sessionToken');
 	};
+
+	useEffect(() => {
+		setTaskType('shopping');
+	}, []);
 
 	return (
 		<>

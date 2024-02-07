@@ -11,6 +11,14 @@ export const ItemTypeMenu = () => {
 		<>
 			<button
 				className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
+					taskType === 'shopping' ? '!bg-blue-500 text-white' : ''
+				}`}
+				onClick={() => handleTaskTypeChange(taskType !== 'shopping' ? 'shopping' : null)}
+			>
+				Shopping
+			</button>
+			<button
+				className={`basis-1/2 rounded-lg border-2 border-[#eeedf0] bg-white p-2 text-sm font-bold text-[#02080f] transition duration-200 dark:border-[#2b3031] dark:bg-[#17181c] dark:text-white ${
 					taskType === 'note' ? '!bg-blue-500 text-white' : ''
 				}`}
 				onClick={() => handleTaskTypeChange(taskType !== 'note' ? 'note' : null)}

@@ -94,9 +94,12 @@ export const patternRouter = createTRPCRouter({
 			if (input.createNewShoppingItem) {
 				await ctx.prisma.item.create({
 					data: {
-						...newDataBaseObject,
+						id: newItemId,
+						name: input.dataBaseObject.name,
 						quantity: input.dataBaseObject.quantity,
+						categoryId: input.dataBaseObject.categoryId,
 						checked: false,
+						price: 0,
 					},
 				});
 			}

@@ -89,6 +89,12 @@ export const PatternsView = () => {
 							onChange={(event) => {
 								setInputValue(event.currentTarget.value);
 							}}
+							onClick={() => {
+								useShoppingStore.setState({
+									currentPatternPriceInputId: -1,
+									nextPatternPriceInputId: -1,
+								});
+							}}
 							rightSection={
 								inputValue.length > 0 && (
 									<div

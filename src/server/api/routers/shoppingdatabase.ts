@@ -1,7 +1,10 @@
+import { type Category, type Item } from '@prisma/client';
 import { z } from 'zod';
 
-import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
+import { groupByCategory } from '~/components/shoppinglist/helpers';
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '~/server/api/trpc';
 import { pusherServerClient } from '~/server/pusher';
+import { type ItemGrouped } from '~/types/shoppinglist';
 
 export const patternRouter = createTRPCRouter({
 	getCategories: protectedProcedure.query(async ({ ctx }) => {
@@ -193,6 +196,25 @@ export const patternRouter = createTRPCRouter({
 
 			return updatedItem;
 		}),
+	// PUBLIC PROCEDURES
+	getCategoriesPublic: publicProcedure.query(async ({ ctx }) => {
+		const categories = await ctx.prisma.category.findMany();
+
+		return categories;
+	}),
+	getAllItemsPublic: publicProcedure.query(async ({ ctx }) => {
+		const allItems = await ctx.prisma.pattern.findMany();
+
+		return allItems;
+	}),
+	getAllItemsWithoutShoppingItemsPublic: publicProcedure.query(async ({ ctx }) => {
+		const shoppingItemsIds = (await ctx.prisma.item.findMany()).map((item) => item.id);
+
+		return ctx.prisma.pattern.findMany({
+			where: { id: { notIn: shoppingItemsIds } },
+			orderBy: { weight: 'desc' },
+		});
+	}),
 });
 
 export const itemRouter = createTRPCRouter({
@@ -248,7 +270,7 @@ export const itemRouter = createTRPCRouter({
 					quantity,
 					categoryId: item.categoryId,
 					checked: false,
-					price: 0,
+					price: item.price,
 				},
 			});
 
@@ -351,4 +373,118 @@ export const itemRouter = createTRPCRouter({
 
 		return true;
 	}),
+	// PUBLIC PROCEDURES
+	getAllItemsPublic: publicProcedure.query(async ({ ctx }) => {
+		const allItems = await ctx.prisma.item.findMany({
+			orderBy: {
+				createdAt: 'asc',
+			},
+		});
+
+		const allDatabaseItems = await ctx.prisma.pattern.findMany();
+
+		const sortedItems = allItems.sort((a, b) => {
+			const aWeight = allDatabaseItems.find((item) => item.id === a.id)?.weight;
+			const bWeight = allDatabaseItems.find((item) => item.id === b.id)?.weight;
+			if (aWeight && bWeight) {
+				return bWeight - aWeight;
+			}
+			return 0;
+		});
+
+		const allCategories = await ctx.prisma.category.findMany();
+
+		// const groupByCategory = (list: Item[], categoryList: Category[]) => {
+		// 	const uniqueCategoryIds = new Set<number>();
+
+		// 	return categoryList.reduce((result, category) => {
+		// 		if (!uniqueCategoryIds.has(category.id)) {
+		// 			uniqueCategoryIds.add(category.id);
+
+		// 			const priceForItems = list
+		// 				.filter((item) => item.categoryId === category.id)
+		// 				.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+		// 			const groupedItems: ItemGrouped = {
+		// 				categoryId: category.id,
+		// 				categoryName: category.name,
+		// 				priceForItems: priceForItems,
+		// 				items: list.filter((item) => item.categoryId === category.id),
+		// 			};
+
+		// 			if (groupedItems.items.length > 0) {
+		// 				result.push(groupedItems);
+		// 			}
+		// 		}
+
+		// 		return result;
+		// 	}, [] as ItemGrouped[]);
+		// };
+
+		const groupedByCategory = groupByCategory(sortedItems, allCategories);
+
+		return groupedByCategory;
+	}),
+	saveItemsPublic: publicProcedure
+		.input(
+			z.object({
+				items: z.array(
+					z.object({
+						id: z.number(),
+						name: z.string(),
+						categoryId: z.number(),
+						quantity: z.number(),
+						checked: z.boolean(),
+						price: z.number(),
+					})
+				),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { items } = input;
+
+			for (const item of items) {
+				const existingItem = await ctx.prisma.item.findUnique({
+					where: { id: item.id },
+				});
+
+				if (existingItem) {
+					await ctx.prisma.item.update({
+						where: { id: item.id },
+						data: {
+							quantity: item.quantity,
+							checked: item.checked,
+							price: item.price,
+						},
+					});
+				}
+			}
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-items-saved', {
+				shoppingItems: items,
+			});
+
+			return true;
+		}),
+	deleteItemFromListPublic: publicProcedure
+		.input(
+			z.object({
+				id: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { id } = input;
+
+			const deletedItem = await ctx.prisma.item.delete({
+				where: { id },
+			});
+
+			if (!deletedItem) throw new Error('Item not found');
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-item-deleted', {
+				shoppingItem: deletedItem,
+			});
+
+			return deletedItem;
+		}),
 });

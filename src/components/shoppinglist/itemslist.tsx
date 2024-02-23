@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { useShoppingStore } from '~/store/shopping';
+import { type ItemGrouped } from '~/types/shoppinglist';
 
 import { ItemEl } from './item';
 
@@ -13,12 +16,32 @@ export const ItemsListEl = ({
 }) => {
 	const items = useShoppingStore((state) => state.itemsGrouped);
 	const clicksOnListBlocked = useShoppingStore((state) => state.clicksOnListBlocked);
+
+	const [itemsSortedByStatus, setItemsSortedByStatus] = useState<ItemGrouped[]>([]);
+
+	useEffect(() => {
+		const itemsSortedByStatus = items.map((group) => ({
+			...group,
+			items: group.items.sort((a, b) => {
+				if (a.checked && !b.checked) {
+					return 1;
+				}
+				if (!a.checked && b.checked) {
+					return -1;
+				}
+				return 0;
+			}),
+		}));
+
+		setItemsSortedByStatus(itemsSortedByStatus);
+	}, [items]);
+
 	return (
 		<>
-			{items.length > 0 && (
+			{itemsSortedByStatus.length > 0 && (
 				<div className="relative rounded-lg bg-white p-4 transition duration-200 ease-in-out dark:bg-[#1d1f20] ">
 					<div className="flex flex-col">
-						{items.map((group) => (
+						{itemsSortedByStatus.map((group) => (
 							<div
 								key={group.categoryId}
 								className={`flex flex-col ${

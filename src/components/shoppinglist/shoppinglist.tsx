@@ -1,3 +1,4 @@
+'use client';
 import { Loader } from '@mantine/core';
 import { type Item, type Pattern } from '@prisma/client';
 import { useCallback, useEffect, useState } from 'react';
@@ -213,6 +214,18 @@ export const ShoppingList = () => {
 					patternsFiltered: useShoppingStore
 						.getState()
 						.patterns.sort((a, b) => b.weight - a.weight),
+				});
+				break;
+			default:
+				break;
+		}
+	});
+
+	useSubscribeToEvent((eventName, data: { shoppingItems: Item[] }) => {
+		switch (eventName) {
+			case 'shopping-items-saved':
+				useShoppingStore.setState({
+					items: data.shoppingItems,
 				});
 				break;
 			default:

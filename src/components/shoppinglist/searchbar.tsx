@@ -59,6 +59,7 @@ export const SearchBar = () => {
 						updatedAt: data.updatedAt,
 						location: data.location,
 						price: data.price,
+						additionalNames: data.additionalNames,
 					};
 					handleNewItemState(newShoppingItem);
 					useShoppingStore.setState({

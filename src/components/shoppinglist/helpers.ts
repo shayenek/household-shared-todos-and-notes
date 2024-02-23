@@ -1,4 +1,5 @@
 import { type Category, type Item, type Pattern } from '@prisma/client';
+import { string } from 'zod';
 
 import { type PatternGrouped, type ItemGrouped } from '~/types/shoppinglist';
 
@@ -57,15 +58,26 @@ export const filterByKeyword = (items: Pattern[], keyword: string, max?: number)
 	}
 	return items
 		.filter((item) => {
+			const normalizedNames = [] as string[];
 			const normalizedItemName = item.name
 				.toLowerCase()
 				.normalize('NFD') // Normalize to decomposed form
 				.replace(/[\u0300-\u036f]/g, ''); // Remove diacritics
+			normalizedNames.push(normalizedItemName);
+			if (item.additionalNames) {
+				item.additionalNames.split(',').forEach((name) => {
+					const normalizedAdditionalName = name
+						.toLowerCase()
+						.normalize('NFD')
+						.replace(/[\u0300-\u036f]/g, '');
+					normalizedNames.push(normalizedAdditionalName);
+				});
+			}
 			const normalizedKeyword = keyword
 				.toLowerCase()
 				.normalize('NFD')
 				.replace(/[\u0300-\u036f]/g, '');
-			return normalizedItemName.includes(normalizedKeyword);
+			return normalizedNames.some((name) => name.includes(normalizedKeyword));
 		})
 		.sort((a, b) => {
 			const aStartsWithInputVal = a.name

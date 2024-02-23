@@ -96,6 +96,7 @@ export const PatternsDropdown = ({
 				updatedAt: new Date(),
 				location: item.location,
 				price: item.price,
+				additionalNames: item.additionalNames,
 			};
 		},
 		[]

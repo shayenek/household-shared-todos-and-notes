@@ -457,11 +457,39 @@ export const itemRouter = createTRPCRouter({
 							price: item.price,
 						},
 					});
+				} else {
+					await ctx.prisma.item.create({
+						data: {
+							id: item.id,
+							name: item.name,
+							quantity: item.quantity,
+							categoryId: item.categoryId,
+							checked: item.checked,
+							price: item.price,
+						},
+					});
 				}
 			}
 
+			const updatedShoppingItems = await ctx.prisma.item.findMany({
+				orderBy: {
+					createdAt: 'asc',
+				},
+			});
+
+			const allDatabaseItems = await ctx.prisma.pattern.findMany();
+
+			const sortedItems = updatedShoppingItems.sort((a, b) => {
+				const aWeight = allDatabaseItems.find((item) => item.id === a.id)?.weight;
+				const bWeight = allDatabaseItems.find((item) => item.id === b.id)?.weight;
+				if (aWeight && bWeight) {
+					return bWeight - aWeight;
+				}
+				return 0;
+			});
+
 			await pusherServerClient.trigger(`user-shayenek`, 'shopping-items-saved', {
-				shoppingItems: items,
+				shoppingItems: sortedItems,
 			});
 
 			return true;

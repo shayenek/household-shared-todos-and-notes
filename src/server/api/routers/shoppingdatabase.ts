@@ -515,4 +515,59 @@ export const itemRouter = createTRPCRouter({
 
 			return deletedItem;
 		}),
+	deleteItemsBulkFromListPublic: publicProcedure
+		.input(
+			z.object({
+				ids: z.array(z.number()),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			const { ids } = input;
+			console.log('chuj');
+			console.log(input);
+
+			const deletedItems = await ctx.prisma.item.deleteMany({
+				where: { id: { in: ids } },
+			});
+
+			if (!deletedItems) throw new Error('Items not found');
+
+			await pusherServerClient.trigger(`user-shayenek`, 'shopping-items-deleted', {
+				shoppingItems: deletedItems,
+			});
+
+			return deletedItems;
+		}),
+	createNewPatternPublic: publicProcedure
+		.input(
+			z.object({
+				name: z.string(),
+				categoryId: z.number(),
+			})
+		)
+		.mutation(async ({ input, ctx }) => {
+			console.log(input);
+			const lastItemInDatabase = await ctx.prisma.pattern.findFirst({
+				orderBy: { id: 'desc' },
+			});
+
+			const newItemId = (lastItemInDatabase?.id || 0) + 1;
+
+			const newDataBaseObject = {
+				id: newItemId,
+				name: input.name,
+				categoryId: input.categoryId,
+				location: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				weight: 1,
+				price: 0,
+			};
+
+			const newItem = await ctx.prisma.pattern.create({
+				data: newDataBaseObject,
+			});
+
+			return newItem;
+		}),
 });

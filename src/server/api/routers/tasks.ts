@@ -459,11 +459,20 @@ export const tasksRouter = createTRPCRouter({
 
 			const newPosition = (lastTask?.position || 0) + 1024;
 
+			const taskAuthor = await ctx.prisma.user.findFirst({
+				where: {
+					email: 'shayenek@gmail.com',
+				},
+				select: {
+					id: true,
+				},
+			});
+
 			const taskItem = await ctx.prisma.task.create({
 				data: {
 					title: newTitle || title,
 					description,
-					author: { connect: { id: 'cliljn3ly0000ufokenumit3j' } },
+					author: { connect: { id: taskAuthor?.id || undefined } },
 					type: 'note',
 					startDate: null,
 					startTime: null,
